@@ -1,0 +1,157 @@
+:root {
+  --bg-dark: #07070a; /* le monde « dedans » : sombre */
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg-dark);
+  color: #e8e8ec;
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* --- Lenis (CSS recommandé) --- */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- Intro --- */
+.intro {
+  position: relative;
+}
+.intro__stage {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  background: #000; /* couture avec la frame finale, noire */
+}
+.intro__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Loader on-theme : écran blanc (le monde « dehors ») + fine barre de progression */
+.intro__loader {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #f4f4f5;
+  transition: opacity 600ms ease;
+}
+.intro__loader[data-done] {
+  opacity: 0;
+  pointer-events: none;
+}
+.intro__progress {
+  --p: 0;
+  width: min(36vw, 240px);
+  height: 2px;
+  background: rgba(0, 0, 0, 0.12);
+  position: relative;
+  overflow: hidden;
+}
+.intro__progress::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: scaleX(var(--p));
+  transform-origin: left;
+  background: #111;
+}
+
+/* Indice de scroll : « défiler ↓ » discret, sur le bureau blanc.
+   Apparaît une fois le preload fini, disparaît dès qu'on scrolle. */
+.intro__cue {
+  position: absolute;
+  bottom: clamp(1.5rem, 4vh, 3rem);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: #1a1a1f;
+  font-size: 0.7rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 700ms ease;
+}
+.intro__cue[data-ready] {
+  opacity: 0.55;
+}
+.intro__cue[data-hidden] {
+  opacity: 0;
+}
+.intro__cue-label {
+  padding-left: 0.28em; /* compense le letter-spacing pour recentrer */
+}
+.intro__cue-arrow {
+  font-size: 0.95rem;
+  letter-spacing: 0;
+  animation: intro-cue-bob 1.8s ease-in-out infinite;
+}
+@keyframes intro-cue-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro__cue-arrow {
+    animation: none;
+  }
+}
+
+/* --- Portfolio (placeholder sombre, tranches suivantes) --- */
+.portfolio {
+  position: relative;
+  min-height: 100vh;
+  background: var(--bg-dark);
+}
+.portfolio__hero {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  color: #5b5b68;
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+}

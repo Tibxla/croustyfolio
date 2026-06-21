@@ -1,0 +1,6 @@
+{
+  "enabledPlugins": {
+    "bmad-pro-skills@bmad-method": true,
+    "chrome-devtools-mcp@claude-plugins-official": true
+  }
+}

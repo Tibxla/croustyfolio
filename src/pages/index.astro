@@ -1,0 +1,47 @@
+---
+import '@fontsource/archivo-narrow/700.css';
+import '@fontsource/schibsted-grotesk/500.css';
+import '../styles/global.css';
+
+const NAME = 'Thibaud Thomas-Lamotte';
+const ROLE = 'Développeur full-stack & IA';
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CroustyFolio — {NAME}</title>
+    <meta name="description" content={`Portfolio de ${NAME} (Tibxla) — ${ROLE}.`} />
+  </head>
+  <body>
+    <!-- Intro : bureau blanc scrubé au scroll → on entre dans l'écran.
+         La couche texte (nom/rôle) est rendue en WebGL et insérée par le JS. -->
+    <section class="intro" data-intro>
+      <div class="intro__stage" data-intro-stage>
+        <canvas class="intro__canvas" data-intro-canvas></canvas>
+        <h1 class="sr-only">{NAME} — {ROLE}</h1>
+        <div class="intro__loader" data-intro-loader>
+          <div class="intro__progress" data-intro-progress></div>
+        </div>
+        <div class="intro__cue" data-intro-cue aria-hidden="true">
+          <span class="intro__cue-label">défiler</span>
+          <span class="intro__cue-arrow">↓</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Portfolio sombre. Ce qu'il y a « dans l'écran » après le noir reste à définir. -->
+    <main class="portfolio">
+      <section class="portfolio__hero">
+        <p>le portfolio sombre vit ici — contenu à venir</p>
+      </section>
+    </main>
+
+    <script>
+      import { initIntro } from '../intro';
+      void initIntro();
+    </script>
+  </body>
+</html>

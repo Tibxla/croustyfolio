@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+.next/
+out/
+dist/
+build/
+.astro/
+
+# Les frames de l'intro (public/intro/frames) SONT commitées — pas d'ignore ici.
+
+# Env
+.env
+.env.local
+.env*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Local agent tooling (machine-specific installs / caches)
+.claude/skills/
+.impeccable/
+.playwright-cli/
