@@ -26,7 +26,7 @@ Portée : l'intro du portfolio (jusqu'à l'entrée « dans l'écran »).
 
 Le nom + rôle sont rendus en **WebGL** par-dessus la scène :
 - **Toujours inversé** sur le fond (`mix-blend: difference`) : sombre sur le bureau clair, clair sur les zones noires.
-- **Entrée en scramble** (lettres qui se décodent).
+- **Entrée = la sortie inversée** : le nom se reconstitue depuis le blow-out chromatique (canaux R/G/B qui convergent + fondu in), miroir exact de la sortie.
 - **Au survol** : flowmap (distorsion qui suit le curseur) + **aberration chromatique** + rainbow selon la vélocité.
 - **À la sortie** (fin du scrub) : **blow-out chromatique** (les canaux R/G/B se séparent) puis dissolution, terminé au ras du noir.
 

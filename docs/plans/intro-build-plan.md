@@ -10,7 +10,7 @@ Décisions d'implémentation. Le glossaire est dans `CONTEXT.md` ; les décision
 | Îlot intro | vanilla TS (pas de framework d'UI) | — |
 | Scrub | séquence de frames sur `<canvas>` (pas `<video>`) | ADR-0002 |
 | Assets | WebP, 2560px, 244 frames (~8 Mo), preload + loader, commitées | ADR-0002 |
-| Couche texte | nom/rôle en WebGL (`FlowText`) : entrée **scramble**, **flowmap + aberration chromatique** au survol, **blow-out chromatique** à la sortie, **toujours inversé** (`mix-blend: difference`) | — |
+| Couche texte | nom/rôle en WebGL (`FlowText`) : **entrée = sortie inversée** (blow-out chromatique qui se reconstitue), **flowmap + aberration chromatique** au survol, **blow-out chromatique** à la sortie, **toujours inversé** (`mix-blend: difference`) | — |
 | Police | self-hostée (`@fontsource` : Archivo Narrow 700, Schibsted Grotesk 500) | — |
 | Fallbacks | desktop-first : mobile + reduced-motion → chemin léger | ADR-0004 |
 

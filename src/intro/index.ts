@@ -11,9 +11,9 @@ const prefersReducedMotion = (): boolean =>
 const isCoarsePointer = (): boolean => window.matchMedia('(pointer: coarse)').matches;
 
 // Orchestrateur de l'Intro : scrub du bureau (on entre dans l'écran) + couche
-// texte WebGL (nom/rôle : scramble à l'entrée, flowmap/aberration au survol,
-// blow-out chromatique à la sortie). Ce qu'il y a « dans l'écran » après le noir
-// reste à définir.
+// texte WebGL (nom/rôle : entrée = sortie inversée (blow-out chromatique qui se
+// reconstitue), flowmap/aberration au survol, blow-out à la sortie). Ce qu'il y
+// a « dans l'écran » après le noir reste à définir.
 export async function initIntro(): Promise<void> {
   const root = document.querySelector<HTMLElement>('[data-intro]');
   const stage = root?.querySelector<HTMLElement>('[data-intro-stage]');
@@ -56,7 +56,7 @@ export async function initIntro(): Promise<void> {
   });
   if (loader) stage.insertBefore(flow.element, loader);
   flow.start();
-  flow.playIntro(1400);
+  flow.playIntro(200);
 
   initScrollScrub({
     trigger: root,

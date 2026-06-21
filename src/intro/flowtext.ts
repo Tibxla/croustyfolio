@@ -5,12 +5,10 @@
 //
 // Ajouts pour l'intro CroustyFolio :
 //  - canvas en `mix-blend-mode: difference` → texte TOUJOURS inversé sur le fond
-//  - entrée en scramble (lettres qui se décodent)
+//  - ENTRÉE = SORTIE inversée : blow-out chromatique qui se reconstitue (le nom
+//    émerge des canaux R/G/B séparés), miroir exact de la sortie
 //  - gating : l'effet ne s'alimente QUE quand le curseur survole le texte
-//  - fondu de sortie (uOpacity) piloté au scroll
 import { Renderer, Program, Mesh, Triangle, Texture, Vec2, Flowmap } from 'ogl';
-
-const SCRAMBLE = 'A!B@C#D$E%F&G*H?J[K]L{M}N=O+P-QRSTUVWXYZ';
 
 const VERT = /* glsl */ `
   attribute vec2 uv;
@@ -96,15 +94,16 @@ export class FlowText {
   private last = new Vec2(0.5, 0.5);
   private moved = false;
   private overText = false;
-  private opacity = 1;
-  private exit = 0;
+  private opacity = 0; // invisible tant que l'entrée n'a pas joué
+  private exit = 1; // 0 = net/visible, 1 = blown-out/invisible
+  private exitScroll = 0; // valeur de sortie pilotée par le scroll
   private idle = 999;
   private running = false;
   private raf = 0;
   private t0 = 0;
-  private scrambling = false;
-  private introStart = 0;
-  private introDur = 1.4;
+  private entering = false;
+  private enterStart = 0;
+  private enterDur = 1.4;
 
   private onMouse: (e: MouseEvent) => void;
   private onTouch: (e: TouchEvent) => void;
@@ -157,8 +156,8 @@ export class FlowText {
         uChroma: { value: this.params.chroma },
         uRadius: { value: this.params.radius },
         uRainbow: { value: this.params.rainbow },
-        uOpacity: { value: 1 },
-        uExit: { value: 0 },
+        uOpacity: { value: 0 },
+        uExit: { value: 1 },
         uColor: { value: [1, 1, 1] }, // blanc : l'inversion se fait via mix-blend
       },
     });
@@ -189,23 +188,24 @@ export class FlowText {
     this.wake();
   }
 
-  setOpacity(o: number): void {
-    this.opacity = o;
-    this.wake();
+  // Applique une valeur de blow-out v (0 = net/visible, 1 = blown-out/invisible) :
+  // les canaux se séparent dès le début, l'opacité ne chute qu'en fin de course.
+  private applyExit(v: number): void {
+    this.exit = v;
+    this.opacity = 1 - Math.max(0, Math.min(1, (v - 0.35) / 0.65));
   }
 
-  // Sortie : blow-out chromatique (p 0→1). Les canaux se séparent dès le début,
-  // l'opacité ne chute qu'en fin de course → on VOIT la réfraction avant la dissolution.
+  // Sortie : blow-out chromatique piloté par le scroll (p 0→1).
   setExit(p: number): void {
-    this.exit = p;
-    this.opacity = 1 - Math.max(0, Math.min(1, (p - 0.35) / 0.65));
+    this.exitScroll = p;
     this.wake();
   }
 
+  // Entrée = la sortie inversée : le nom se reconstitue depuis le blow-out (v 1→0).
   playIntro(durationMs = 1400): void {
-    this.introDur = durationMs / 1000;
-    this.introStart = (performance.now() - this.t0) / 1000;
-    this.scrambling = true;
+    this.enterDur = durationMs / 1000;
+    this.enterStart = (performance.now() - this.t0) / 1000;
+    this.entering = true;
     this.wake();
   }
 
@@ -215,7 +215,7 @@ export class FlowText {
     this.renderer.setSize(w, h);
     this.program.uniforms.uAspect.value = w / h;
     this.flowmap.aspect = w / h;
-    this.redrawText(this.scrambling ? 0 : 1);
+    this.redrawText();
     this.wake();
   }
 
@@ -269,15 +269,19 @@ export class FlowText {
 
   private loop(now: number): void {
     const time = (now - this.t0) / 1000;
+
+    // Valeur de blow-out : entrée (v 1→0, miroir de la sortie) puis scroll.
+    if (this.entering) {
+      const p = Math.min(1, (time - this.enterStart) / this.enterDur);
+      this.applyExit(1 - p);
+      if (p >= 1) this.entering = false;
+    } else {
+      this.applyExit(this.exitScroll);
+    }
+
     this.program.uniforms.uTime.value = time;
     this.program.uniforms.uOpacity.value = this.opacity;
     this.program.uniforms.uExit.value = this.exit;
-
-    if (this.scrambling) {
-      const p = Math.min(1, (time - this.introStart) / this.introDur);
-      this.redrawText(p);
-      if (p >= 1) this.scrambling = false;
-    }
 
     // Pas de mouvement cette frame → on coupe l'injection. Hors texte → idem.
     if (!this.moved) {
@@ -295,23 +299,12 @@ export class FlowText {
 
     this.renderer.render({ scene: this.mesh });
 
-    this.idle = this.scrambling ? 0 : this.idle + 1;
+    this.idle = this.entering ? 0 : this.idle + 1;
     if (this.idle > 90) {
       this.running = false;
       return;
     }
     this.raf = requestAnimationFrame((n) => this.loop(n));
-  }
-
-  private scrambled(text: string, p: number): string {
-    if (p >= 1) return text;
-    let out = '';
-    for (let i = 0; i < text.length; i++) {
-      const threshold = (i / text.length) * 0.85;
-      if (text[i] === ' ' || p >= threshold + 0.0001) out += text[i];
-      else out += SCRAMBLE[(Math.random() * SCRAMBLE.length) | 0];
-    }
-    return out;
   }
 
   private fit(text: string, weight: number, family: string, start: number, maxW: number): number {
@@ -325,7 +318,7 @@ export class FlowText {
     return size;
   }
 
-  private redrawText(progress: number): void {
+  private redrawText(): void {
     const ctx = this.tctx;
     const w = this.gl.canvas.width;
     const h = this.gl.canvas.height;
@@ -344,12 +337,12 @@ export class FlowText {
     const nameSize = this.fit(this.name, 700, '"Archivo Narrow", sans-serif', h * 0.13, w * 0.86);
     ctx.font = `700 ${nameSize.toFixed(0)}px "Archivo Narrow", sans-serif`;
     ctx.letterSpacing = `${(nameSize * 0.015).toFixed(1)}px`;
-    ctx.fillText(this.scrambled(this.name, progress), cx, cy);
+    ctx.fillText(this.name, cx, cy);
 
     const roleSize = Math.min(h * 0.022, w * 0.014);
     ctx.font = `500 ${roleSize.toFixed(0)}px "Schibsted Grotesk", sans-serif`;
     ctx.letterSpacing = `${(roleSize * 0.32).toFixed(1)}px`;
-    ctx.fillText(this.scrambled(this.role, progress), cx + roleSize * 0.16, cy + nameSize * 0.62);
+    ctx.fillText(this.role, cx + roleSize * 0.16, cy + nameSize * 0.62);
     ctx.letterSpacing = '0px';
 
     this.texture.image = this.textCanvas;
