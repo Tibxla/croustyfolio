@@ -19,3 +19,19 @@ _Éviter_ : clair/foncé, dark mode, thème
 **Le seuil** :
 Le cadre du moniteur — la frontière entre les deux mondes, qu'on franchit pendant l'Intro.
 _Éviter_ : bordure, cadre, transition
+
+**Passer l'intro** :
+Le contrôle discret qui franchit le seuil d'un coup, depuis le chargement comme depuis le scrub, pour entrer directement dans le dedans. Un aller simple : une fois passé, on ne retrouve plus l'intro sans recharger.
+_Éviter_ : skip, bypass, entrer
+
+**Sélection** :
+La zone du dedans qui présente les projets : un petit nombre de projets phares, curatés, parcourus en scrubant. Le portfolio ne déballe pas un catalogue, il *sélectionne*.
+_Éviter_ : portfolio, galerie, projets, grille, carrousel
+
+**Fiche système** :
+La forme sous laquelle un projet apparaît dans la Sélection : sa donnée réelle (rôle, stack, métriques, statut prod) traitée comme le visuel principal — un relevé du software en marche, pas une carte marketing. Un vrai screenshot peut venir en appui, encadré comme un écran, jamais en pièce maîtresse.
+_Éviter_ : carte projet, vignette, case, carte marketing
+
+**Étude de cas** :
+L'écran de profondeur d'un projet, atteint depuis sa fiche système : on descend d'un cran dans le « système » pour lire le récit (problème, contraintes, décisions, résultat). Réservée à Edifig — le seul projet sans preuve cliquable. URL partageable.
+_Éviter_ : page projet, détail, sous-page, article

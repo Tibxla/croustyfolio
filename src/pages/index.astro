@@ -1,10 +1,58 @@
 ---
+import '@fontsource/archivo-narrow/600.css';
 import '@fontsource/archivo-narrow/700.css';
+import '@fontsource/schibsted-grotesk/400.css';
 import '@fontsource/schibsted-grotesk/500.css';
+import '@fontsource/schibsted-grotesk/600.css';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/500.css';
 import '../styles/global.css';
+import '../styles/dedans.css';
+import { PROJECTS } from '../dedans/projects';
 
 const NAME = 'Thibaud Thomas-Lamotte';
 const ROLE = 'Développeur full-stack & IA';
+const COUNT = String(PROJECTS.length).padStart(2, '0');
+
+// Stack curée (~16) en deux rangées à contre-sens. Le « range » va dans `ALSO`.
+const STACK_ROW_1 = ['TypeScript', 'React', 'Next.js', 'Astro', 'Node', 'Tailwind', 'WebGL · OGL', 'GSAP'];
+const STACK_ROW_2 = ['PostgreSQL', 'Supabase', 'Drizzle', 'Docker', 'GitHub Actions', 'Vitest', 'Lenis', 'Claude Code'];
+const STACK_ALSO = 'C/C++ · PHP · Java · Python · LaTeX · Tailscale';
+const STACK_ALL = [...STACK_ROW_1, ...STACK_ROW_2];
+
+// Parcours — expérience + formation (faits sourcés CV/vault, sans broderie).
+// Affichage inspiré du portfolio red1-for-hek : timeline centrale + poste /
+// entreprise / année à gauche, description à droite.
+interface CareerEntry {
+  position: string;
+  company: string;
+  period: string;
+  description: string;
+  href?: string;
+  linkLabel?: string;
+}
+const CAREER: readonly CareerEntry[] = [
+  {
+    position: 'Développeur · stage',
+    company: 'Le Figaro · DSI',
+    period: '2026',
+    description: 'Conçu et livré Edifig, en production pour la rédaction Propriétés.',
+    href: '/edifig',
+    linkLabel: 'cat étude_de_cas',
+  },
+  {
+    position: 'Licence MIAGE',
+    company: 'Université Paris Nanterre',
+    period: '2023 – 2026',
+    description: 'Informatique & gestion d’entreprise.',
+  },
+  {
+    position: 'Master MIAGE',
+    company: 'Université Paris Nanterre',
+    period: '2026 → 2028',
+    description: 'En alternance, à partir de septembre 2026.',
+  },
+];
 ---
 
 <!doctype html>
@@ -12,8 +60,10 @@ const ROLE = 'Développeur full-stack & IA';
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>CroustyFolio — {NAME}</title>
-    <meta name="description" content={`Portfolio de ${NAME} (Tibxla) — ${ROLE}.`} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#000000" />
+    <title>{NAME} — {ROLE}</title>
+    <meta name="description" content={`Portfolio de ${NAME} (Tibxla) — ${ROLE}. Des produits livrés en production, du modèle métier au pixel.`} />
   </head>
   <body>
     <!-- Intro : bureau blanc scrubé au scroll → on entre dans l'écran.
@@ -21,7 +71,6 @@ const ROLE = 'Développeur full-stack & IA';
     <section class="intro" data-intro>
       <div class="intro__stage" data-intro-stage>
         <canvas class="intro__canvas" data-intro-canvas></canvas>
-        <h1 class="sr-only">{NAME} — {ROLE}</h1>
         <div class="intro__loader" data-intro-loader>
           <div class="intro__progress" data-intro-progress></div>
         </div>
@@ -29,19 +78,278 @@ const ROLE = 'Développeur full-stack & IA';
           <span class="intro__cue-label">défiler</span>
           <span class="intro__cue-arrow">↓</span>
         </div>
+        <button class="intro__skip" data-intro-skip type="button">
+          passer l'intro <span class="intro__skip-arrow" aria-hidden="true">→</span>
+        </button>
       </div>
     </section>
 
-    <!-- Portfolio sombre. Ce qu'il y a « dans l'écran » après le noir reste à définir. -->
-    <main class="portfolio">
-      <section class="portfolio__hero">
-        <p>le portfolio sombre vit ici — contenu à venir</p>
+    <!-- Monde « dedans » : le portfolio sombre, le « software ». On y entre après
+         l'Intro. Cinq zones, un seul scroll : accueil (whoami) → Sélection →
+         Stack → À propos → Contact. Le nom n'est pas répété en grand (l'Intro
+         vient de le livrer) : le whoami le rappelle en clin d'œil. -->
+    <main class="dc" data-dedans>
+      <h1 class="sr-only">{NAME} — {ROLE}</h1>
+
+      <div class="dc-bg" data-dc-bg aria-hidden="true"></div>
+      <div class="dc-topprog" data-dc-topprog aria-hidden="true"></div>
+
+      <header class="dc-bar" data-dc-bar>
+        <span class="dc-bar__prompt">tibxla@croustyfolio:~$</span>
+        <span class="dc-bar__status">
+          <span class="dc-bar__online"><span class="dc-dot"></span>online</span>
+          <span>freelance</span>
+          <span data-dc-clock>--:--</span>
+        </span>
+      </header>
+
+      <!-- ZONE 1 · ACCUEIL : on sort du noir de l'Intro, le système boote, on
+           rappelle le rôle (whoami) puis le claim. -->
+      <section class="dc-enter">
+        <div class="dc-enter__inner">
+          <p class="dc-boot dc-mono dc-faint">// session ouverte</p>
+          <p class="dc-whoami dc-mono">
+            <span class="dc-whoami__sign">&gt;</span>
+            <span class="dc-whoami__cmd" data-dc-type>whoami</span>
+          </p>
+          <p class="dc-whoami__out dc-mono" data-dc-scramble>{ROLE}</p>
+          <h2 class="dc-enter__title" data-dc-headline>Je conçois, je code, je livre.</h2>
+          <p class="dc-enter__sub">
+            Des produits qui partent en production, du modèle métier au pixel. Seul,
+            avec une rigueur que le code prouve.
+          </p>
+        </div>
+        <div class="dc-cue" aria-hidden="true">
+          <span>scruber</span>
+          <span class="dc-cue__arrow">↓</span>
+        </div>
       </section>
+
+      <!-- ZONE 2 · SÉLECTION : liste verticale numérotée (inspiré Tajmirul/portfolio-2.0).
+           Survol d'une ligne → les autres s'estompent + une preview (télémétrie) suit le
+           curseur. Pas de carte/grille (anti « trop IA »). Clic → lien principal du projet. -->
+      <section class="dc-gallery" data-dc-gallery aria-label="Sélection de projets">
+        <div class="dc-sel">
+          <div class="dc-lead">
+            <span class="dc-mono dc-faint">// sélection</span>
+            <h2 class="dc-lead__title">SÉLECTION</h2>
+            <span class="dc-mono dc-meta">{COUNT} projets · survole, clique pour ouvrir</span>
+          </div>
+
+          <div class="dc-projlist" data-dc-projlist>
+            {
+              PROJECTS.map((p, i) => {
+                const primary = p.links[0];
+                const Row = primary ? 'a' : 'div';
+                const rowAttrs = primary
+                  ? {
+                      href: primary.href,
+                      ...(primary.kind === 'case' ? {} : { target: '_blank', rel: 'noopener' }),
+                    }
+                  : {};
+                return (
+                  <Row class="dc-proj" data-dc-proj data-dc-slug={p.slug} data-dc-status={p.status} {...rowAttrs}>
+                    <span class="dc-proj__num dc-mono">_{String(i + 1).padStart(2, '0')}.</span>
+                    <div class="dc-proj__main">
+                      <h3 class="dc-proj__title" data-dc-title>
+                        {p.title}
+                        <span class="dc-proj__arrow" aria-hidden="true">↗</span>
+                      </h3>
+                      <div class="dc-proj__tags dc-mono">
+                        {p.stack.slice(0, 3).map((t, idx, arr) => (
+                          <>
+                            <span>{t}</span>
+                            {idx < arr.length - 1 && <span class="dc-proj__dot" aria-hidden="true" />}
+                          </>
+                        ))}
+                      </div>
+                    </div>
+                  </Row>
+                );
+              })
+            }
+          </div>
+
+          <div class="dc-tail">
+            <span class="dc-mono dc-faint">// fin de l'index</span>
+            <h2 class="dc-tail__title">La suite ?</h2>
+            <span class="dc-mono dc-meta">↓ continue</span>
+          </div>
+        </div>
+
+        <!-- Preview flottante (desktop) : suit le curseur, montre la télémétrie du projet survolé. -->
+        <div class="dc-projpreview" data-dc-projpreview aria-hidden="true">
+          {
+            PROJECTS.map((p) => (
+              <div class="dc-prev" data-dc-prev={p.slug} data-dc-status={p.status}>
+                <div class="dc-prev__head">
+                  <span class="dc-prev__id dc-mono">PROJET // {p.n}</span>
+                  <span class="dc-prev__status dc-mono"><span class="dc-prev__led" />{p.statusLabel}</span>
+                </div>
+                <p class="dc-prev__tagline dc-mono">{p.tagline}</p>
+                <ul class="dc-prev__metrics">
+                  {p.metrics.map((m) => (
+                    <li>
+                      <span class="dc-prev__num dc-mono">{m.value}</span>
+                      <span class="dc-prev__lbl dc-mono">{m.label}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p class="dc-prev__stack dc-mono">{p.stack.join(' · ')}</p>
+              </div>
+            ))
+          }
+        </div>
+      </section>
+
+      <!-- ZONE · PARCOURS : timeline centrale + poste/entreprise/année (inspiré red1-for-hek). -->
+      <section class="dc-career" data-dc-reveal aria-label="Parcours et expérience">
+        <span class="dc-career__kicker dc-mono dc-faint">&gt; career --list</span>
+        <h2 class="dc-career__title">Parcours <span>&amp;</span> expérience</h2>
+        <div class="dc-career__info">
+          <div class="dc-career__track" aria-hidden="true">
+            <span class="dc-career__fill" data-dc-timeline></span>
+            <span class="dc-career__dot" data-dc-timeline-dot></span>
+          </div>
+          {
+            CAREER.map((c) => (
+              <div class="dc-career__row">
+                <div class="dc-career__in">
+                  <div class="dc-career__role">
+                    <h3 class="dc-career__pos">{c.position}</h3>
+                    <h4 class="dc-career__co">{c.company}</h4>
+                    {c.href && (
+                      <a class="dc-career__link dc-mono" data-dc-magnetic data-dc-mag="0.3" href={c.href}>
+                        {c.linkLabel} <span aria-hidden="true">↘</span>
+                      </a>
+                    )}
+                  </div>
+                  <span class="dc-career__year">{c.period}</span>
+                </div>
+                <div class="dc-career__desc">
+                  <p>{c.description}</p>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </section>
+
+      <!-- ZONE 3 · STACK : marquee infini de tokens mono, vitesse couplée au scroll.
+           Décoratif (aria-hidden) → la vraie liste est exposée en sr-only. -->
+      <section class="dc-stack" data-dc-reveal aria-label="Stack technique">
+        <div class="dc-stack__head">
+          <span class="dc-stack__kicker dc-mono dc-faint">// stack --list</span>
+          <h2 class="dc-stack__title">Le terrain de jeu</h2>
+        </div>
+
+        <div class="dc-stack__marquee" data-dc-marquee aria-hidden="true">
+          <div class="dc-stack__row" data-dc-marquee-row data-dir="1">
+            <div class="dc-stack__rowtrack" data-dc-marquee-track>
+              {STACK_ROW_1.map((t) => (
+                <span class="dc-token" data-text={t}>{t}</span>
+              ))}
+            </div>
+          </div>
+          <div class="dc-stack__row" data-dc-marquee-row data-dir="-1">
+            <div class="dc-stack__rowtrack" data-dc-marquee-track>
+              {STACK_ROW_2.map((t) => (
+                <span class="dc-token" data-text={t}>{t}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <p class="dc-stack__also dc-mono dc-meta">aussi : {STACK_ALSO}</p>
+        <ul class="sr-only">{STACK_ALL.map((t) => <li>{t}</li>)}</ul>
+      </section>
+
+      <!-- ZONE 4 · À PROPOS : claim + comment je bosse + specs + portrait CRT. -->
+      <section class="dc-about" data-dc-reveal aria-label="À propos">
+        <span class="dc-about__kicker dc-mono dc-faint">&gt; cat about.md</span>
+        <div class="dc-about__head">
+          <figure class="dc-portrait" data-dc-portrait>
+            <img
+              class="dc-portrait__img"
+              src="/portrait.webp"
+              alt="Thibaud Thomas-Lamotte"
+              width="600"
+              height="600"
+              loading="lazy"
+            />
+            <span class="dc-crt" aria-hidden="true"></span>
+          </figure>
+          <div class="dc-about__intro">
+            <h2 class="dc-about__title">À propos</h2>
+            <p class="dc-about__lede">
+              Je conçois et je code des produits qui partent en prod. Seul, du modèle
+              métier au pixel. Ce qui m'intéresse : le détail qui tient, la rigueur
+              (tests, décisions tracées) et l'IA comme outil que je pilote.
+            </p>
+          </div>
+        </div>
+        <div class="dc-about__grid">
+          <ul class="dc-about__how dc-mono" aria-label="Comment je travaille">
+            <li><span class="dc-about__bullet" aria-hidden="true">▹</span> autonomie de bout en bout</li>
+            <li><span class="dc-about__bullet" aria-hidden="true">▹</span> rigueur : TDD, décisions tracées (ADR)</li>
+            <li><span class="dc-about__bullet" aria-hidden="true">▹</span> IA-assisté, décisions humaines</li>
+            <li><span class="dc-about__bullet" aria-hidden="true">▹</span> le métier avant la techno</li>
+          </ul>
+          <dl class="dc-specs">
+            <div class="dc-spec"><dt>LOCALISATION</dt><dd>Île-de-France · remote</dd></div>
+            <div class="dc-spec"><dt>RÔLE</dt><dd>{ROLE}</dd></div>
+            <div class="dc-spec"><dt>TERRAIN</dt><dd>Interfaces · web · IA</dd></div>
+            <div class="dc-spec"><dt>DISPONIBILITÉ</dt><dd>Ouvert aux missions</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <!-- ZONE 5 · CONTACT -->
+      <section class="dc-contact" data-dc-reveal aria-label="Contact">
+        <span class="dc-contact__kicker dc-mono">&gt; contact --now</span>
+        <!-- Email : flowmap WebGL de l'intro (desktop), fallback texte en calm.
+             Clic = copie dans le presse-papier (pas d'ouverture de client mail). -->
+        <button
+          class="dc-contact__stage dc-contact__copy"
+          type="button"
+          data-dc-contact-stage
+          data-dc-copy="contact@thibaudtl.xyz"
+          aria-label="Copier l'adresse email"
+        >
+          <span class="dc-contact__num dc-mono">contact@thibaudtl.xyz</span>
+        </button>
+        <div class="dc-contact__sub">
+          <button
+            class="dc-contact__tel dc-mono"
+            type="button"
+            data-dc-copy="+33 6 51 07 27 27"
+            aria-label="Copier le numéro de téléphone"
+          >
+            <span class="dc-faint">tel</span>&nbsp;&nbsp;+33 6 51 07 27 27
+          </button>
+          <span class="dc-contact__feedback dc-mono" data-dc-copy-feedback aria-live="polite"></span>
+        </div>
+        <p class="dc-contact__invite dc-mono dc-meta">Clique sur l'email ou le numéro pour le copier.</p>
+        <div class="dc-contact__foot">
+          <nav class="dc-social dc-mono" aria-label="Réseaux">
+            <a data-dc-magnetic data-dc-mag="0.4" href="https://github.com/Tibxla" target="_blank" rel="noopener">github ↗</a>
+            <a data-dc-magnetic data-dc-mag="0.4" href="https://www.linkedin.com/in/thibaudthomaslamotte" target="_blank" rel="noopener">linkedin ↗</a>
+          </nav>
+          <p class="dc-colophon dc-mono">© 2026 · tibxla · <span data-dc-clock>--:--</span></p>
+        </div>
+      </section>
+
+      <!-- flash « power-on » : l'écran s'allume à l'entrée dans le monde sombre -->
+      <div class="dc-poweron" data-dc-poweron aria-hidden="true"></div>
+
+      <!-- curseur custom : construit par le JS (desktop) -->
     </main>
 
     <script>
       import { initIntro } from '../intro';
+      import { initDedans } from '../dedans';
       void initIntro();
+      initDedans();
     </script>
   </body>
 </html>

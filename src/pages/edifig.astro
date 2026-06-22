@@ -1,0 +1,373 @@
+---
+import '@fontsource/archivo-narrow/600.css';
+import '@fontsource/archivo-narrow/700.css';
+import '@fontsource/schibsted-grotesk/400.css';
+import '@fontsource/schibsted-grotesk/500.css';
+import '@fontsource/schibsted-grotesk/600.css';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/500.css';
+import '../styles/global.css';
+import '../styles/dedans.css';
+
+// Étude de cas Edifig : l'écran de profondeur de la fiche système (cf. CONTEXT.md).
+// On descend d'un cran dans le « système » : même DA terminal, lecture posée.
+// Edifig est confidentiel (DSI Figaro) : le récit reste au niveau conception /
+// contraintes / décisions, sans détail sensible. Faits sourcés (rapport de stage).
+const TITLE = 'Edifig';
+
+// Les décisions marquantes, traitées comme des entrées tracées (façon ADR).
+const DECISIONS = [
+  {
+    ref: 'ADR-0001',
+    title: 'Concurrence optimiste scindée',
+    body: "Côté client, dernière-écriture-gagne, silencieux : l'édition ne bloque jamais. Côté serveur, versioning strict (409) : aucune donnée n'est écrasée à l'insu de personne. Deux régimes pour deux besoins opposés.",
+  },
+  {
+    ref: 'ADR-0025',
+    title: 'Temps réel sans service tiers',
+    body: "Le réseau de la DSI est fermé. Plutôt qu'un service temps réel externe, j'ai rediffusé le LISTEN/NOTIFY de PostgreSQL en Server-Sent Events. Zéro dépendance sortante, l'édition collaborative se met à jour en sous-seconde.",
+  },
+  {
+    ref: 'ADR-0024',
+    title: 'Auth Okta validée en local',
+    body: "SSO d'entreprise via Okta (OIDC), mais le jeton est validé localement contre les clés JWKS (pas d'appel sortant à chaque requête), puis posé en cookie httpOnly. Contrainte réseau transformée en architecture.",
+  },
+  {
+    ref: 'ADR-0009',
+    title: 'Création progressive',
+    body: "Créer une édition de 300 pages devait être instantané pour l'utilisateur. La ligne est insérée, la redirection part aussitôt, et les pages se peuplent par lots en arrière-plan, poussées au client par SSE au fil de l'eau.",
+  },
+];
+
+const METRICS = [
+  { value: '42 000', label: 'lignes TypeScript' },
+  { value: '1 443', label: 'commits en 8 semaines' },
+  { value: '~1 600', label: 'tests Vitest' },
+  { value: '30', label: 'décisions tracées (ADR)' },
+];
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#000000" />
+    <title>{TITLE} — étude de cas · Thibaud Thomas-Lamotte</title>
+    <meta
+      name="description"
+      content="Étude de cas Edifig : le chemin de fer numérique de Propriétés Le Figaro, conçu et livré en production en huit semaines, en autonomie."
+    />
+  </head>
+  <body>
+    <main class="dc cs">
+      <div class="cs-bg" aria-hidden="true"></div>
+
+      <header class="dc-bar">
+        <span class="dc-bar__prompt">tibxla@croustyfolio:~/sélection/edifig$</span>
+        <span class="dc-bar__status">
+          <span class="dc-bar__online"><span class="dc-dot"></span>online</span>
+          <span>étude de cas</span>
+        </span>
+      </header>
+
+      <article class="cs-wrap">
+        <a class="cs-back dc-mono" href="/">cd .. <span aria-hidden="true">↩</span> retour au portfolio</a>
+
+        <header class="cs-hero">
+          <span class="cs-id dc-mono">PROJET // 01</span>
+          <h1 class="cs-title">{TITLE}</h1>
+          <p class="cs-tagline dc-mono">
+            <span class="dc-faint">&gt;</span> chemin de fer numérique — Propriétés Le Figaro
+          </p>
+          <dl class="cs-facts dc-mono">
+            <div><dt>contexte</dt><dd>Le Figaro · stage DSI · 2026</dd></div>
+            <div><dt>rôle</dt><dd>conception + développement, en autonomie</dd></div>
+            <div><dt>stack</dt><dd>Next.js 16 · TypeScript · PostgreSQL · Okta · SSE</dd></div>
+            <div><dt>statut</dt><dd>en production</dd></div>
+          </dl>
+        </header>
+
+        <section class="cs-block">
+          <h2 class="cs-h2 dc-mono">le problème</h2>
+          <p class="cs-lede">
+            Le magazine <em>Propriétés Le Figaro</em> (300 à 400 pages, bimestriel) composait
+            son chemin de fer dans un fichier Excel échangé par mail. La question du stage :
+            comment le remplacer, en huit semaines et seul, par une application web intégrée au
+            SI du Figaro, utilisable par une équipe éditoriale non technique, et qui génère en
+            temps réel le XML conforme à la chaîne d'impression ?
+          </p>
+        </section>
+
+        <section class="cs-block">
+          <h2 class="cs-h2 dc-mono">les contraintes</h2>
+          <ul class="cs-list dc-mono">
+            <li>Réseau de la DSI fermé : aucun appel sortant possible à l'exécution.</li>
+            <li>XML normé (chaîne Sentinel), validé octet par octet contre une fixture de référence.</li>
+            <li>Équipe non technique : zéro friction, aucune rupture avec l'habitude du tableur.</li>
+            <li>Édition collaborative : plusieurs personnes sur le même chemin de fer en même temps.</li>
+          </ul>
+        </section>
+
+        <section class="cs-block">
+          <h2 class="cs-h2 dc-mono">les décisions</h2>
+          <p class="cs-note dc-mono dc-meta">Chaque arbitrage est tracé. Quatre parmi trente.</p>
+          <div class="cs-decisions">
+            {
+              DECISIONS.map((d) => (
+                <div class="cs-decision">
+                  <div class="cs-decision__head">
+                    <span class="cs-decision__ref dc-mono">{d.ref}</span>
+                    <h3 class="cs-decision__title">{d.title}</h3>
+                  </div>
+                  <p class="cs-decision__body">{d.body}</p>
+                </div>
+              ))
+            }
+          </div>
+        </section>
+
+        <section class="cs-block">
+          <h2 class="cs-h2 dc-mono">le résultat</h2>
+          <ul class="cs-metrics">
+            {
+              METRICS.map((m) => (
+                <li class="cs-metric">
+                  <span class="cs-metric__num dc-mono">{m.value}</span>
+                  <span class="cs-metric__label dc-mono">{m.label}</span>
+                </li>
+              ))
+            }
+          </ul>
+          <p class="cs-lede">
+            En production fin mai 2026, l'application est passée en test réel avec la rédaction
+            Propriétés. Trois réunions de présentation ont nourri six fonctionnalités ajoutées
+            après le déploiement (rapport d'avancement par mail, rôles, refonte de la taxonomie
+            des rubriques). Le stage a été noté 19 sur 20.
+          </p>
+        </section>
+
+        <footer class="cs-foot">
+          <a class="cs-back dc-mono" href="/">cd .. <span aria-hidden="true">↩</span> retour au portfolio</a>
+          <a class="cs-contact dc-mono" href="mailto:contact@thibaudtl.xyz">on en parle ? <span aria-hidden="true">↗</span></a>
+        </footer>
+      </article>
+    </main>
+
+    <style>
+      /* Fond statique discret (pas de WebGL ici : page de lecture). */
+      .cs-bg {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        background:
+          radial-gradient(120% 80% at 50% 0%, rgba(30, 30, 40, 0.5), transparent 60%),
+          repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.012) 0 2px, transparent 2px 4px),
+          #000;
+      }
+      .cs {
+        min-height: 100vh;
+      }
+      .cs-wrap {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: clamp(90px, 14vh, 140px) var(--pad-x) 80px;
+      }
+      .cs-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        color: var(--meta);
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+      .cs-back:hover {
+        color: var(--ink);
+      }
+
+      .cs-hero {
+        margin: 44px 0 clamp(48px, 8vh, 80px);
+        border-bottom: 1px solid var(--rule);
+        padding-bottom: clamp(28px, 4vw, 40px);
+      }
+      .cs-id {
+        font-size: 12px;
+        letter-spacing: 0.12em;
+        color: var(--label);
+      }
+      .cs-title {
+        margin: 14px 0 0;
+        font-family: var(--ff-display);
+        font-weight: 700;
+        font-size: clamp(64px, 12vw, 150px);
+        line-height: 0.86;
+        letter-spacing: -0.02em;
+        color: var(--ink-hi);
+      }
+      .cs-tagline {
+        margin: 14px 0 0;
+        font-size: 14px;
+        color: var(--prose);
+      }
+      .cs-facts {
+        margin: clamp(28px, 4vw, 40px) 0 0;
+        display: grid;
+        gap: 0;
+      }
+      .cs-facts > div {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: 16px;
+        padding: 12px 0;
+        border-top: 1px solid var(--rule-soft);
+        font-size: 13px;
+      }
+      .cs-facts dt {
+        color: var(--label);
+        letter-spacing: 0.06em;
+      }
+      .cs-facts dd {
+        margin: 0;
+        color: var(--ink-2);
+      }
+
+      .cs-block {
+        margin: clamp(48px, 8vh, 86px) 0 0;
+      }
+      .cs-h2 {
+        margin: 0 0 22px;
+        font-size: 14px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink);
+      }
+      .cs-lede {
+        margin: 0;
+        max-width: 66ch;
+        font-size: clamp(16px, 1.4vw, 19px);
+        line-height: 1.62;
+        color: var(--prose);
+        text-wrap: pretty;
+      }
+      .cs-note {
+        margin: 0 0 22px;
+        font-size: 12.5px;
+      }
+      .cs-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-width: 66ch;
+        font-size: 14px;
+        line-height: 1.5;
+        color: var(--ink-2);
+      }
+      .cs-list li {
+        position: relative;
+        padding-left: 22px;
+      }
+      .cs-list li::before {
+        content: '▹';
+        position: absolute;
+        left: 0;
+        color: var(--st-prod);
+      }
+
+      .cs-decisions {
+        display: grid;
+        gap: 1px;
+        background: var(--rule-soft);
+        border: 1px solid var(--rule-soft);
+      }
+      .cs-decision {
+        background: var(--surface-2);
+        padding: clamp(20px, 3vw, 28px);
+      }
+      .cs-decision__head {
+        display: flex;
+        align-items: baseline;
+        gap: 14px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+      }
+      .cs-decision__ref {
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        color: var(--st-live);
+        border: 1px solid var(--rule);
+        border-radius: 999px;
+        padding: 3px 10px;
+      }
+      .cs-decision__title {
+        margin: 0;
+        font-family: var(--ff-display);
+        font-weight: 600;
+        font-size: clamp(22px, 2.4vw, 30px);
+        line-height: 1.05;
+        color: var(--ink-hi);
+      }
+      .cs-decision__body {
+        margin: 0;
+        font-size: 14.5px;
+        line-height: 1.6;
+        color: var(--prose);
+        text-wrap: pretty;
+      }
+
+      .cs-metrics {
+        display: flex;
+        flex-wrap: wrap;
+        gap: clamp(22px, 4vw, 48px);
+        margin: 0 0 30px;
+        padding: 0;
+        list-style: none;
+      }
+      .cs-metric {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .cs-metric__num {
+        font-size: clamp(28px, 3.2vw, 44px);
+        font-weight: 500;
+        line-height: 1;
+        color: var(--ink-hi);
+        font-variant-numeric: tabular-nums;
+      }
+      .cs-metric__label {
+        font-size: 11px;
+        letter-spacing: 0.05em;
+        color: var(--label);
+      }
+
+      .cs-foot {
+        margin: clamp(60px, 10vh, 110px) 0 0;
+        padding-top: 30px;
+        border-top: 1px solid var(--rule);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 18px;
+      }
+      .cs-contact {
+        font-size: 13px;
+        color: var(--ink);
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+      .cs-contact:hover {
+        color: #fff;
+        text-shadow:
+          -2px 0 var(--chroma-r),
+          2px 0 var(--chroma-c);
+      }
+    </style>
+  </body>
+</html>

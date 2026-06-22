@@ -1,0 +1,1197 @@
+/* =========================================================================
+   Monde « dedans » — le portfolio sombre, le « software ».
+   Cinq zones, un seul scroll : accueil (whoami) → Sélection → Stack → À propos
+   → Contact. Desktop (pointeur fin, motion ok) : Sélection scrubée horizontale,
+   marquee animé, fond WebGL, curseur custom, effets de texte. Mobile /
+   reduced-motion (mode « calm ») : tout reste lisible et visible sans JS —
+   listes verticales, fonds figés, pas d'animation décorative.
+
+   Échelle de z-index sémantique :
+     fond (React Bits) ..... -1
+     contenu ............... 0
+     calques internes fiche  1–6
+     barre système ......... 55
+     barre de progression .. 60
+     flash power-on ........ 90
+     curseur custom ........ 100
+   ========================================================================= */
+
+.dc {
+  /* Rampe d'encre — contrastes vérifiés sur fond noir #000 (AA texte courant) */
+  --ink-hi: #f4f4f7; /* titres display */
+  --ink: #e8e8ec; /* corps fort, liens */
+  --ink-2: #c8c8d0; /* secondaire */
+  --prose: #9c9ca6; /* paragraphes (~7:1) */
+  --meta: #8a8a96; /* méta mono (~6:1) */
+  --label: #7c7c88; /* petites étiquettes lisibles (~5:1) */
+  --faint: #7e7e8a; /* étiquettes discrètes mais lisibles (~4.7:1, AA) */
+  --deco: #4f4f5a; /* décoration pure (numéros fantômes, //) */
+
+  --rule: rgba(255, 255, 255, 0.1);
+  --rule-soft: rgba(255, 255, 255, 0.06);
+  --rule-strong: rgba(255, 255, 255, 0.16);
+  --surface: rgba(10, 10, 14, 0.58);
+  --surface-2: rgba(18, 18, 24, 0.7);
+
+  --chroma-r: rgba(255, 42, 92, 0.7); /* RGB split — rouge */
+  --chroma-c: rgba(0, 198, 255, 0.7); /* RGB split — cyan */
+
+  /* statuts (LED des fiches) */
+  --st-prod: #52d18a;
+  --st-live: #c8c8d0;
+  --st-oss: #e8e8ec;
+  --st-wip: #d6a44e;
+
+  --ff-display: 'Archivo Narrow', ui-sans-serif, sans-serif;
+  --ff-sans: 'Schibsted Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --ff-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+  --pad-x: 7vw;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  position: relative;
+  color: var(--ink);
+  font-family: var(--ff-sans);
+}
+
+/* ---- fond « dot field » ---- */
+.dc-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: #000;
+}
+
+/* ===== Allumage de l'écran (power-on) =====
+   En mode scrub, le monde sombre est « éteint » : le fond ET le premier écran
+   (accueil) sont présents mais cachés (noir). À la fin de l'intro, tout s'allume
+   d'un coup (flash + apparition simultanée). Pas de révélation au scroll. */
+html[data-dc-mode='scrub'] .dc-bg,
+html[data-dc-mode='scrub'] .dc-enter__inner,
+html[data-dc-mode='scrub'] .dc-enter .dc-cue {
+  opacity: 0;
+}
+html[data-dc-mode='scrub'] [data-dedans][data-dc-power] .dc-bg {
+  opacity: 1;
+  transition: opacity 0.3s ease-out;
+}
+html[data-dc-mode='scrub'] [data-dedans][data-dc-power] .dc-enter__inner,
+html[data-dc-mode='scrub'] [data-dedans][data-dc-power] .dc-enter .dc-cue {
+  opacity: 1;
+  transition: opacity 0.4s ease-out 0.05s;
+}
+
+.dc-poweron {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    circle at 50% 44%,
+    rgba(244, 244, 247, 0.92),
+    rgba(244, 244, 247, 0.22) 55%,
+    transparent 78%
+  );
+}
+html[data-dc-mode='scrub'] [data-dedans][data-dc-power] .dc-poweron {
+  animation: dc-poweron 0.6s ease-out forwards;
+}
+@keyframes dc-poweron {
+  0% {
+    opacity: 0;
+  }
+  7% {
+    opacity: 0.8;
+  }
+  16% {
+    opacity: 0.18;
+  }
+  26% {
+    opacity: 0.46;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ---- barre de progression de lecture ---- */
+.dc-topprog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 60;
+  background: linear-gradient(90deg, rgba(255, 42, 92, 0.9), rgba(0, 198, 255, 0.9));
+  transform: scaleX(0);
+  transform-origin: left;
+  will-change: transform;
+}
+
+/* ---- barre système persistante ---- */
+.dc-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 55;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 14px var(--pad-x);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--ff-mono);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: var(--meta);
+}
+.dc-bar__prompt {
+  min-width: 0;
+  flex: 1 1 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dc-bar__status {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex: none;
+}
+.dc-bar__online {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dc-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink);
+  display: inline-block;
+  animation: dc-softpulse 2.4s ease-in-out infinite;
+}
+
+/* ---- utilitaires mono ---- */
+.dc-mono {
+  font-family: var(--ff-mono);
+}
+.dc-faint {
+  color: var(--faint);
+}
+.dc-meta {
+  color: var(--meta);
+}
+.dc-label {
+  color: var(--label);
+}
+
+/* Focus clavier visible dans tout le « dedans » (miroir de .intro__skip). */
+.dc-proj:focus-visible,
+.dc-career__link:focus-visible,
+.dc-contact__copy:focus-visible,
+.dc-contact__tel:focus-visible,
+.dc-social a:focus-visible {
+  outline: 2px solid var(--ink-hi);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* caret bloc clignotant inline (fin de la ligne contact) */
+.dc-blink {
+  display: inline-block;
+  width: clamp(10px, 1.1vw, 16px);
+  height: clamp(34px, 6.4vw, 84px);
+  background: var(--ink);
+  margin-left: 14px;
+  vertical-align: baseline;
+  animation: dc-blink 1.1s steps(1) infinite;
+}
+
+/* =========================================================================
+   ZONE 1 — ACCUEIL : on sort du noir de l'Intro → boot → whoami → claim.
+   ========================================================================= */
+.dc-enter {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 120px var(--pad-x) 0;
+  overflow: hidden;
+}
+.dc-enter__inner {
+  position: relative;
+  max-width: 1100px;
+}
+.dc-boot {
+  margin: 0 0 18px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--faint);
+}
+.dc-whoami {
+  margin: 0;
+  font-size: clamp(15px, 1.5vw, 19px);
+  color: var(--ink);
+}
+.dc-whoami__sign {
+  color: var(--st-prod);
+  margin-right: 10px;
+}
+.dc-whoami::after {
+  content: '';
+  display: inline-block;
+  width: 0.55em;
+  height: 1.05em;
+  margin-left: 4px;
+  background: var(--ink);
+  vertical-align: -0.16em;
+  animation: dc-blink 1.1s steps(1) infinite;
+}
+.dc-whoami__out {
+  margin: 10px 0 0;
+  font-size: clamp(14px, 1.4vw, 18px);
+  color: var(--ink-2);
+  letter-spacing: 0.01em;
+}
+.dc-whoami__out::before {
+  content: '↳ ';
+  color: var(--deco);
+}
+.dc-enter__title {
+  margin: clamp(26px, 4vh, 48px) 0 0;
+  font-family: var(--ff-display);
+  font-weight: 700;
+  font-size: clamp(52px, 9vw, 132px);
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  color: var(--ink-hi);
+  text-wrap: balance;
+}
+.dc-enter__sub {
+  margin: 28px 0 0;
+  max-width: 60ch;
+  font-size: clamp(16px, 1.4vw, 20px);
+  line-height: 1.55;
+  color: var(--prose);
+  text-wrap: pretty;
+}
+.dc-cue {
+  position: absolute;
+  left: 50%;
+  bottom: 34px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--meta);
+}
+.dc-cue span:first-child {
+  padding-left: 0.28em;
+}
+.dc-cue__arrow {
+  font-size: 14px;
+  letter-spacing: 0;
+  animation: dc-bob 1.8s ease-in-out infinite;
+}
+
+/* =========================================================================
+   ZONE 2 — SÉLECTION
+   Par défaut (calm / sans JS) : liste verticale de fiches lisibles.
+   Le mode scrub (desktop) bascule la piste en horizontal (plus bas).
+   ========================================================================= */
+.dc-gallery {
+  position: relative;
+}
+.dc-gallery__sticky {
+  position: relative;
+}
+.dc-track {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(36px, 6vh, 84px);
+  padding: clamp(44px, 8vh, 90px) var(--pad-x);
+}
+.dc-lead,
+.dc-tail {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+}
+.dc-lead__title {
+  margin: 0;
+  font-family: var(--ff-display);
+  font-weight: 700;
+  font-size: clamp(56px, 9vw, 104px);
+  line-height: 0.86;
+  letter-spacing: -0.02em;
+  color: var(--ink-hi);
+}
+.dc-tail__title {
+  margin: 0;
+  font-family: var(--ff-display);
+  font-weight: 700;
+  font-size: clamp(44px, 7vw, 64px);
+  line-height: 0.9;
+  color: var(--ink-hi);
+}
+
+/* =========================================================================
+   SÉLECTION — liste de projets + preview flottante (inspiré Tajmirul/portfolio-2.0)
+   ========================================================================= */
+.dc-sel {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: clamp(40px, 7vh, 84px) var(--pad-x);
+}
+.dc-projlist {
+  margin: clamp(30px, 5vw, 56px) 0;
+}
+.dc-proj {
+  display: flex;
+  gap: clamp(14px, 2vw, 28px);
+  align-items: baseline;
+  padding: clamp(18px, 2.6vw, 30px) 0;
+  border-bottom: 1px solid var(--rule);
+  text-decoration: none;
+  color: inherit;
+  transition: opacity 0.4s var(--ease-out);
+}
+.dc-proj:first-child {
+  padding-top: 0;
+}
+.dc-projlist[data-dc-hover] .dc-proj:not([data-active]) {
+  opacity: 0.3;
+}
+.dc-proj__num {
+  flex: none;
+  font-size: clamp(13px, 1.3vw, 17px);
+  color: var(--faint);
+}
+.dc-proj__title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+  font-family: var(--ff-display);
+  font-weight: 700;
+  font-size: clamp(34px, 5.4vw, 74px);
+  line-height: 0.98;
+  letter-spacing: -0.01em;
+  color: var(--ink-hi);
+}
+.dc-proj__arrow {
+  font-size: 0.4em;
+  opacity: 0;
+  transform: translate(-6px, 2px);
+  transition:
+    opacity 0.3s,
+    transform 0.3s var(--ease-out);
+}
+.dc-proj:hover .dc-proj__arrow,
+.dc-proj[data-active] .dc-proj__arrow {
+  opacity: 1;
+  transform: none;
+}
+.dc-proj__tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: var(--meta);
+}
+.dc-proj__dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--deco);
+}
+
+/* preview flottante (desktop) : suit le curseur, posée à droite */
+.dc-projpreview {
+  position: absolute;
+  top: 0;
+  right: var(--pad-x);
+  z-index: 6;
+  width: clamp(280px, 24vw, 360px);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s var(--ease-out);
+  will-change: transform;
+}
+.dc-projpreview[data-on] {
+  opacity: 1;
+}
+.dc-prev {
+  display: none;
+  position: relative;
+  border: 1px solid var(--rule);
+  background: rgba(11, 11, 15, 0.92);
+  padding: 22px;
+  box-shadow: 0 34px 70px -34px rgba(0, 0, 0, 0.85);
+}
+/* 3D-2 : un fond décalé derrière la carte → épaisseur ; il parallaxe avec le
+   curseur (--px/--py posés par gallery.ts) pour révéler la profondeur. */
+.dc-prev::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border: 1px solid var(--rule-soft);
+  background: rgba(6, 6, 9, 0.94);
+  transform: translate(calc(14px + var(--px, 0) * -14px), calc(14px + var(--py, 0) * -10px));
+}
+.dc-prev[data-on] {
+  display: block;
+}
+.dc-prev__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--label);
+  margin-bottom: 14px;
+}
+.dc-prev__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--meta);
+}
+.dc-prev__led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink);
+}
+[data-dc-status='prod'] .dc-prev__led {
+  background: var(--st-prod);
+}
+[data-dc-status='live'] .dc-prev__led {
+  background: var(--st-live);
+}
+[data-dc-status='oss'] .dc-prev__led {
+  background: var(--st-oss);
+}
+[data-dc-status='wip'] .dc-prev__led {
+  background: var(--st-wip);
+}
+.dc-prev__tagline {
+  margin: 0 0 16px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--prose);
+}
+.dc-prev__metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 22px;
+  margin: 0 0 16px;
+  padding: 14px 0;
+  border-top: 1px solid var(--rule-soft);
+  border-bottom: 1px solid var(--rule-soft);
+  list-style: none;
+}
+.dc-prev__metrics li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dc-prev__num {
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--ink-hi);
+  font-variant-numeric: tabular-nums;
+}
+.dc-prev__lbl {
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  color: var(--label);
+}
+.dc-prev__stack {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--meta);
+}
+/* calm / mobile : pas de preview flottante (liste seule, lisible) */
+html:not([data-dc-mode='scrub']) .dc-projpreview {
+  display: none;
+}
+/* Fenêtre étroite à pointeur fin (desktop réduit, petite tablette) : on garde le
+   scrub, mais on retire la preview flottante — collée à right:var(--pad-x) et
+   large de 280px min, elle chevaucherait les titres de la Sélection. */
+@media (max-width: 900px) {
+  .dc-projpreview {
+    display: none;
+  }
+}
+@media (max-width: 680px) {
+  .dc-proj {
+    flex-direction: column;
+    gap: 6px;
+  }
+}
+
+/* overlay CRT du portrait : scanlines + vignette + balayage.
+   Le balayage est coupé en reduced-motion (plus bas). */
+.dc-crt {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 0, 0, 0.16) 3px
+  );
+  box-shadow:
+    inset 0 0 60px rgba(0, 0, 0, 0.5),
+    inset 0 0 3px rgba(255, 255, 255, 0.05);
+}
+.dc-crt::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 38%;
+  background: linear-gradient(rgba(255, 255, 255, 0.05), transparent 70%);
+  transform: translateY(-110%);
+  animation: dc-scan 5.5s linear infinite;
+}
+
+/* =========================================================================
+   ZONE — PARCOURS : timeline terminale (expérience + formation).
+   ========================================================================= */
+.dc-career {
+  padding: clamp(60px, 10vh, 110px) var(--pad-x);
+}
+.dc-career__kicker {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 14px;
+}
+.dc-career__title {
+  margin: 0 0 clamp(44px, 8vw, 96px);
+  font-family: var(--ff-display);
+  font-weight: 700;
+  font-size: clamp(40px, 6vw, 76px);
+  line-height: 0.96;
+  color: var(--ink-hi);
+}
+.dc-career__title span {
+  color: var(--faint);
+  font-weight: 400;
+}
+.dc-career__info {
+  position: relative;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+/* timeline centrale : la ligne se remplit + le point lumineux descend au scroll */
+.dc-career__track {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.07);
+  pointer-events: none;
+}
+.dc-career__fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: top;
+  transform: scaleY(1); /* plein par défaut (calm) ; la boucle l'anime au scroll */
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.5) 88%);
+}
+.dc-career__dot {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translate(-50%, -50%);
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow:
+    0 0 6px 2px rgba(255, 255, 255, 0.5),
+    0 0 18px 6px rgba(255, 255, 255, 0.22);
+  animation: dc-glow 2.2s ease-in-out infinite;
+}
+.dc-career__row {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: clamp(30px, 6vw, 90px);
+  margin-bottom: clamp(44px, 7vh, 80px);
+}
+.dc-career__row:last-child {
+  margin-bottom: 0;
+}
+.dc-career__in {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  width: 44%;
+}
+.dc-career__pos {
+  margin: 0;
+  font-family: var(--ff-display);
+  font-weight: 600;
+  font-size: clamp(22px, 2.4vw, 32px);
+  line-height: 1.05;
+  color: var(--ink-hi);
+}
+.dc-career__co {
+  margin: 8px 0 0;
+  font-weight: 500;
+  font-size: 15px;
+  letter-spacing: 0.01em;
+  color: var(--st-live);
+}
+.dc-career__year {
+  font-family: var(--ff-display);
+  font-weight: 500;
+  font-size: clamp(26px, 3vw, 40px);
+  line-height: 1;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.dc-career__desc {
+  width: 44%;
+}
+.dc-career__desc p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--prose);
+  text-wrap: pretty;
+}
+.dc-career__link {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+  text-decoration: none;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  padding: 8px 16px;
+  will-change: transform;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+.dc-career__link:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.45);
+}
+/* mobile : pile verticale, timeline alignée à gauche */
+@media (max-width: 760px) {
+  .dc-career__track {
+    left: 5px;
+  }
+  .dc-career__fill,
+  .dc-career__dot {
+    left: 0;
+  }
+  .dc-career__row {
+    flex-direction: column;
+    gap: 12px;
+    padding-left: 28px;
+  }
+  .dc-career__in,
+  .dc-career__desc {
+    width: 100%;
+  }
+}
+
+/* =========================================================================
+   ZONE 3 — STACK : marquee de tokens mono, vitesse couplée au scroll (JS).
+   ========================================================================= */
+.dc-stack {
+  padding: clamp(56px, 9vh, 100px) 0;
+  overflow: hidden;
+}
+.dc-stack__head {
+  padding: 0 var(--pad-x);
+  margin-bottom: clamp(28px, 4vw, 48px);
+}
+.dc-stack__kicker {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 14px;
+}
+.dc-stack__title {
+  margin: 0;
+  font-family: var(--ff-display);
+  font-weight: 700;
+  font-size: clamp(40px, 6vw, 76px);
+  line-height: 0.92;
+  color: var(--ink-hi);
+}
+.dc-stack__marquee {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.dc-stack__row {
+  overflow: hidden;
+}
+.dc-stack__rowtrack {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap; /* calm : tokens enroulés, statiques */
+  justify-content: center;
+  padding: 0 var(--pad-x);
+}
+.dc-token {
+  position: relative;
+  flex: none;
+  font-family: var(--ff-mono);
+  font-size: 14px;
+  color: var(--ink-2);
+  padding: 9px 16px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: var(--surface);
+  white-space: nowrap;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+}
+.dc-token:hover {
+  color: #fff;
+  border-color: var(--rule-strong);
+}
+.dc-token::before,
+.dc-token::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 9px;
+  left: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.dc-token:hover::before {
+  color: var(--chroma-r);
+  transform: translateX(-2px);
+  opacity: 0.9;
+}
+.dc-token:hover::after {
+  color: var(--chroma-c);
+  transform: translateX(2px);
+  opacity: 0.9;
+}
+.dc-stack__also {
+  padding: clamp(28px, 4vw, 44px) var(--pad-x) 0;
+  margin: 0;
+  font-size: 12.5px;
+}
+
+/* =========================================================================
+   ZONE 4 — À PROPOS
+   ========================================================================= */
+.dc-about {
+  padding: clamp(64px, 11vh, 120px) var(--pad-x);
+}
+.dc-about__kicker {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 28px;
+}
+.dc-about__head {
+  display: flex;
+  align-items: center;
+  gap: clamp(24px, 4vw, 48px);
+  flex-wrap: wrap;
+  margin-bottom: clamp(32px, 5vw, 56px);
+}
+.dc-about__intro {
+  flex: 1 1 340px;
+}
+.dc-about__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(28px, 5vw, 56px);
+  align-items: start;
+}
+.dc-about__title {
+  margin: 0;
+  font-family: var(--ff-display);
+  font-weight: 700;
+  font-size: clamp(48px, 6vw, 84px);
+  line-height: 0.92;
+  color: var(--ink-hi);
+}
+.dc-about__lede {
+  margin: 18px 0 0;
+  max-width: 56ch;
+  font-size: clamp(16px, 1.4vw, 19px);
+  line-height: 1.55;
+  color: var(--prose);
+  text-wrap: pretty;
+}
+.dc-about__how {
+  margin: 30px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.dc-about__bullet {
+  color: var(--st-prod);
+  margin-right: 10px;
+}
+
+/* portrait « écran CRT » (placeholder « no signal » tant que la photo manque) */
+.dc-portrait {
+  position: relative;
+  flex: 0 0 auto;
+  width: clamp(124px, 18vw, 184px);
+  aspect-ratio: 1 / 1;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  background: #0a0a0e;
+}
+.dc-portrait__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* N&B par défaut, couleur au survol */
+  filter: grayscale(1) contrast(1.05);
+  transition: filter 0.55s var(--ease-out);
+}
+.dc-portrait:hover .dc-portrait__img {
+  filter: grayscale(0) contrast(1.02);
+}
+.dc-specs {
+  margin: 0;
+  font-family: var(--ff-mono);
+}
+.dc-spec {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--rule);
+  transition: background 0.2s;
+}
+.dc-spec:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+.dc-spec dt {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--label);
+}
+.dc-spec dd {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+@media (min-width: 760px) {
+  .dc-about__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* =========================================================================
+   ZONE 5 — CONTACT
+   ========================================================================= */
+.dc-contact {
+  padding: clamp(60px, 10vh, 100px) var(--pad-x) 56px;
+  border-top: 1px solid var(--rule);
+}
+.dc-contact__kicker {
+  display: block;
+  font-size: 13px;
+  color: var(--faint);
+  margin-bottom: 24px;
+}
+/* Zone du numéro : le WebGL flowmap de l'intro y est injecté (desktop). */
+.dc-contact__stage {
+  position: relative;
+  width: 100%;
+  height: clamp(110px, 16vh, 190px);
+  margin: 6px 0 2px;
+}
+/* Fallback texte (calm) ; en mode scrub le flowmap prend le relais. */
+.dc-contact__num {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  font-family: var(--ff-display);
+  font-weight: 700;
+  font-size: clamp(28px, 5vw, 64px);
+  letter-spacing: -0.01em;
+  color: var(--ink-hi);
+  word-break: break-word;
+}
+html[data-dc-mode='scrub'] .dc-contact__num {
+  display: none;
+}
+/* email = bouton « copier » (le flowmap est par-dessus, pointer-events: none) */
+.dc-contact__copy {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+.dc-contact__sub {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.dc-contact__tel {
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  color: var(--ink-2);
+  transition: color 0.2s;
+}
+.dc-contact__tel:hover {
+  color: #fff;
+}
+.dc-contact__feedback {
+  font-size: 12.5px;
+  color: var(--st-prod);
+  min-height: 1em;
+}
+.dc-contact__invite {
+  margin: 26px 0 0;
+  font-size: 14px;
+}
+.dc-contact__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: clamp(40px, 7vh, 70px);
+}
+.dc-social {
+  display: flex;
+  gap: 28px;
+  font-size: 13px;
+}
+.dc-social a {
+  color: var(--prose);
+  text-decoration: none;
+  will-change: transform;
+  transition: color 0.2s;
+}
+.dc-social a:hover {
+  color: #fff;
+}
+.dc-colophon {
+  margin: 0;
+  font-size: 12px;
+  color: var(--faint);
+  text-align: right;
+}
+
+/* =========================================================================
+   CURSEUR — natif conservé + caret bloc clignotant qui suit le pointeur.
+   Construit par le JS, affiché seulement quand le monde dedans est actif.
+   ========================================================================= */
+.dc-caret {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  width: 7px;
+  height: 16px;
+  background: #fff;
+  pointer-events: none;
+  mix-blend-mode: difference;
+  transform: translate(-100px, -100px) translate(0, -50%);
+  animation: dc-caretblink 1.1s steps(1) infinite;
+  will-change: transform;
+}
+[data-dedans][data-dc-cursor] .dc-caret {
+  display: block;
+}
+@keyframes dc-caretblink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* =========================================================================
+   MODE SCRUB (desktop, motion ok) — bascule horizontale + chrome révélée.
+   ========================================================================= */
+/* On remonte le monde sombre d'un écran pour qu'il chevauche la fin du pin de
+   l'intro : l'écran d'accueil est déjà CADRÉ quand l'écran s'allume. */
+html[data-dc-mode='scrub'] .dc {
+  margin-top: -100svh;
+}
+html[data-intro-skipped][data-dc-mode='scrub'] .dc {
+  margin-top: 0;
+}
+/* Stack : en scrub, le marquee tourne sur une seule ligne (masquée aux bords) */
+html[data-dc-mode='scrub'] .dc-stack__marquee {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+}
+html[data-dc-mode='scrub'] .dc-stack__rowtrack {
+  flex-wrap: nowrap;
+  width: max-content;
+  justify-content: flex-start;
+  padding: 0;
+  will-change: transform;
+}
+
+/* Chrome (barre + progression) cachée tant qu'on n'est pas dans le dedans */
+html[data-dc-mode='scrub'] .dc-bar {
+  opacity: 0;
+  transform: translateY(-101%);
+  transition:
+    opacity 0.6s var(--ease-out),
+    transform 0.6s var(--ease-out);
+}
+html[data-dc-mode='scrub'] .dc-topprog {
+  opacity: 0;
+  transition: opacity 0.6s var(--ease-out);
+}
+html[data-dc-mode='scrub'] [data-dedans][data-dc-active] .dc-bar {
+  opacity: 1;
+  transform: none;
+}
+html[data-dc-mode='scrub'] [data-dedans][data-dc-active] .dc-topprog {
+  opacity: 1;
+}
+
+
+/* =========================================================================
+   RÉVÉLATIONS — progressive enhancement : caché seulement si JS + motion ok.
+   ========================================================================= */
+html[data-dc-enhanced] [data-dc-reveal] {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.8s var(--ease-out),
+    transform 0.8s var(--ease-out);
+}
+html[data-dc-enhanced] [data-dc-reveal][data-dc-shown] {
+  opacity: 1;
+  transform: none;
+}
+
+/* =========================================================================
+   KEYFRAMES
+   ========================================================================= */
+@keyframes dc-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes dc-softpulse {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes dc-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(5px);
+  }
+}
+@keyframes dc-scan {
+  to {
+    transform: translateY(380%);
+  }
+}
+@keyframes dc-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 5px 2px rgba(255, 255, 255, 0.45);
+  }
+  50% {
+    box-shadow:
+      0 0 8px 3px rgba(255, 255, 255, 0.7),
+      0 0 22px 8px rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* =========================================================================
+   REDUCED MOTION — version calme : aucune animation décorative.
+   (Le fond WebGL est dessiné une seule fois côté JS ; la Sélection reste en
+   liste verticale, le marquee en tokens enroulés, le CRT figé.)
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .dc-dot,
+  .dc-caret,
+  .dc-blink,
+  .dc-cue__arrow,
+  .dc-career__dot,
+  .dc-whoami::after {
+    animation: none;
+  }
+  .dc-crt::after {
+    display: none;
+  }
+  .dc-caret {
+    opacity: 0.9;
+  }
+}
