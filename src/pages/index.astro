@@ -9,6 +9,7 @@ import '@fontsource/ibm-plex-mono/500.css';
 import '../styles/global.css';
 import '../styles/dedans.css';
 import { PROJECTS } from '../dedans/projects';
+import { FRAME_COUNT } from '../intro/frames';
 import Seo from '../components/Seo.astro';
 
 const NAME = 'Thibaud Thomas-Lamotte';
@@ -97,7 +98,13 @@ const CAREER: readonly CareerEntry[] = [
       <div class="intro__stage" data-intro-stage>
         <canvas class="intro__canvas" data-intro-canvas></canvas>
         <div class="intro__loader" data-intro-loader>
-          <div class="intro__progress" data-intro-progress></div>
+          <div class="intro__readout">
+            <span class="intro__readout-label">chargement</span>
+            <div class="intro__progress" data-intro-progress></div>
+            <span class="intro__count" data-intro-count>0 / {FRAME_COUNT}</span>
+          </div>
+          <!-- Ticker « plaque » (jetons d'identité, courbe draggable) monté par le JS. -->
+          <div class="intro__plate" data-intro-plate aria-hidden="true"></div>
         </div>
         <div class="intro__cue" data-intro-cue aria-hidden="true">
           <span class="intro__cue-label">défiler</span>

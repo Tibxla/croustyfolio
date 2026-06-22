@@ -20,6 +20,10 @@ _Éviter_ : clair/foncé, dark mode, thème
 Le cadre du moniteur — la frontière entre les deux mondes, qu'on franchit pendant l'Intro.
 _Éviter_ : bordure, cadre, transition
 
+**Le chargement** :
+La phase d'attente avant que l'Intro soit jouable (le temps que l'appareil tienne tout en main). Vécue *dans le dehors*, comme un appareil qui s'éveille : honnête sur son avancement et discrètement vivant, jamais un sablier posé pour meubler. Parle la voix du dehors, pas celle du dedans.
+_Éviter_ : loader, spinner, splash, page de loading, écran de démarrage
+
 **Passer l'intro** :
 Le contrôle discret qui franchit le seuil d'un coup, depuis le chargement comme depuis le scrub, pour entrer directement dans le dedans. Un aller simple : une fois passé, on ne retrouve plus l'intro sans recharger.
 _Éviter_ : skip, bypass, entrer

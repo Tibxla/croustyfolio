@@ -2,6 +2,11 @@ import { preloadFrames } from './preload';
 import { Scrub } from './scrub';
 import { initPageScroll, initScrollScrub, type ScrubControl } from './scroll';
 import { FlowText } from './flowtext';
+import { Nameplate } from './nameplate';
+
+// Plaque signalétique du chargement : une copie des jetons, séparateur de fin
+// inclus (`… 2026 · `) pour une couture régulière à chaque répétition.
+const PLATE_TOKENS = 'TIBXLA · DÉVELOPPEUR · THIBAUDTL.XYZ · PORTFOLIO · 2026 · ';
 
 const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
 
@@ -25,6 +30,8 @@ export async function initIntro(): Promise<void> {
   const canvas = root?.querySelector<HTMLCanvasElement>('[data-intro-canvas]');
   const loader = root?.querySelector<HTMLElement>('[data-intro-loader]');
   const bar = root?.querySelector<HTMLElement>('[data-intro-progress]');
+  const count = root?.querySelector<HTMLElement>('[data-intro-count]');
+  const plateHost = root?.querySelector<HTMLElement>('[data-intro-plate]');
   const cue = root?.querySelector<HTMLElement>('[data-intro-cue]');
   const skipBtn = root?.querySelector<HTMLButtonElement>('[data-intro-skip]');
   if (!root || !stage || !canvas) return;
@@ -55,6 +62,7 @@ export async function initIntro(): Promise<void> {
   let skipped = false;
   let scrubControl: ScrubControl | null = null;
   let flow: FlowText | null = null;
+  let plate: Nameplate | null = null;
   let onResize: (() => void) | null = null;
 
   // « Passer l'intro » : franchit le seuil d'un coup. Robuste si actionné AVANT
@@ -77,6 +85,7 @@ export async function initIntro(): Promise<void> {
       // retenait le Scrub (et ses 244 frames, ~8,1 Mo) : l'intro skippée ne
       // laisse plus ni contexte fantôme ni bitmaps en mémoire.
       flow?.destroy();
+      plate?.destroy(); // arrête le rAF + les listeners du ticker (root.remove() ne le ferait pas)
       if (onResize) window.removeEventListener('resize', onResize);
       // Le dedans est remonté de -100svh pour chevaucher la fin du pin (CSS
       // scrub). L'Intro retirée, il n'a plus rien à chevaucher → on annule la
@@ -121,24 +130,40 @@ export async function initIntro(): Promise<void> {
   window.addEventListener('intro:in', showSkip);
   showSkip();
 
+  // Ticker « plaque » : vivant dès le départ pour animer l'attente du chargement.
+  // Il meurt avec le chargement (data-done plus bas) et au skip().
+  if (plateHost) {
+    plate = new Nameplate(plateHost, { text: PLATE_TOKENS });
+    plate.start();
+  }
+
+  // Polices chargées EN PARALLÈLE des frames : avant, elles bloquaient APRÈS tout
+  // le preload (de l'attente gratuite en bout de course). Cf. docs/adr/0006.
+  const fontsReady = (async (): Promise<void> => {
+    try {
+      await Promise.all([
+        document.fonts.load('700 100px "Archivo Narrow"'),
+        document.fonts.load('500 24px "Schibsted Grotesk"'),
+      ]);
+    } catch {
+      /* fallback si le chargement échoue */
+    }
+  })();
+
   const images = await preloadFrames((loaded, total) => {
     bar?.style.setProperty('--p', String(loaded / total));
+    if (count) count.textContent = `${loaded} / ${total}`;
   });
   if (skipped) return; // skippé pendant le preload → on n'initialise pas le scrub
 
-  try {
-    await Promise.all([
-      document.fonts.load('700 100px "Archivo Narrow"'),
-      document.fonts.load('500 24px "Schibsted Grotesk"'),
-    ]);
-  } catch {
-    /* fallback si le chargement échoue */
-  }
+  await fontsReady;
   if (skipped) return;
 
   const scrub = new Scrub(canvas, images);
   scrub.draw(0);
   loader?.setAttribute('data-done', '');
+  // Le ticker s'efface avec le loader (fondu 600ms) puis on libère son rAF/listeners.
+  window.setTimeout(() => plate?.destroy(), 600);
   cue?.setAttribute('data-ready', '');
   lenis.start(); // fin du chargement → on lève le verrou : le scrub devient opérable
 
