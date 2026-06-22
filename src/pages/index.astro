@@ -1,10 +1,18 @@
 ---
+import '@fontsource/archivo-narrow/600.css';
 import '@fontsource/archivo-narrow/700.css';
+import '@fontsource/schibsted-grotesk/400.css';
 import '@fontsource/schibsted-grotesk/500.css';
+import '@fontsource/schibsted-grotesk/600.css';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/500.css';
 import '../styles/global.css';
+import '../styles/dedans.css';
+import { PROJECTS } from '../dedans/projects';
 
 const NAME = 'Thibaud Thomas-Lamotte';
 const ROLE = 'Développeur full-stack & IA';
+const COUNT = String(PROJECTS.length).padStart(2, '0');
 ---
 
 <!doctype html>
@@ -21,7 +29,6 @@ const ROLE = 'Développeur full-stack & IA';
     <section class="intro" data-intro>
       <div class="intro__stage" data-intro-stage>
         <canvas class="intro__canvas" data-intro-canvas></canvas>
-        <h1 class="sr-only">{NAME} — {ROLE}</h1>
         <div class="intro__loader" data-intro-loader>
           <div class="intro__progress" data-intro-progress></div>
         </div>
@@ -32,16 +39,162 @@ const ROLE = 'Développeur full-stack & IA';
       </div>
     </section>
 
-    <!-- Portfolio sombre. Ce qu'il y a « dans l'écran » après le noir reste à définir. -->
-    <main class="portfolio">
-      <section class="portfolio__hero">
-        <p>le portfolio sombre vit ici — contenu à venir</p>
+    <!-- Monde « dedans » : le portfolio sombre, le « software ». On y entre après
+         l'Intro. Le nom n'est pas répété (l'Intro vient de le livrer) : on ouvre
+         sur le boot du système puis la sélection des projets. -->
+    <main class="dc" data-dedans>
+      <h1 class="sr-only">{NAME} — {ROLE}</h1>
+
+      <div class="dc-bg" data-dc-bg aria-hidden="true"></div>
+      <div class="dc-topprog" data-dc-topprog aria-hidden="true"></div>
+
+      <header class="dc-bar" data-dc-bar>
+        <span class="dc-bar__prompt">tibxla@croustyfolio:~$</span>
+        <span class="dc-bar__status">
+          <span class="dc-bar__online"><span class="dc-dot"></span>online</span>
+          <span>v1.0</span>
+          <span data-dc-clock>--:--</span>
+        </span>
+      </header>
+
+      <!-- ENTRÉE : boot du monde dedans, puis Sélection -->
+      <section class="dc-enter">
+        <div class="dc-enter__inner">
+          <p class="dc-boot dc-mono dc-faint">// monde dedans</p>
+          <p class="dc-boot dc-mono">
+            &gt; session ouverte <span class="dc-dots">............</span> <span class="dc-ok">ok</span>
+          </p>
+          <p class="dc-boot dc-mono">&gt; {COUNT} projets indexés</p>
+          <h2 class="dc-enter__title">Sélection.</h2>
+          <p class="dc-enter__sub">
+            Six projets, 2023–2026. Le scroll est ton curseur : défile pour parcourir.
+          </p>
+        </div>
+        <div class="dc-cue" aria-hidden="true">
+          <span>défiler</span>
+          <span class="dc-cue__arrow">↓</span>
+        </div>
       </section>
+
+      <!-- GALERIE : scrubée horizontalement (desktop) / liste verticale (calm) -->
+      <section class="dc-gallery" data-dc-gallery aria-label="Projets">
+        <div class="dc-gallery__sticky" data-dc-sticky>
+          <div class="dc-track" data-dc-track>
+            <div class="dc-lead">
+              <span class="dc-mono dc-faint">// projets · 2023–2026</span>
+              <h2 class="dc-lead__title">SÉLECTION</h2>
+              <span class="dc-mono dc-meta">{COUNT} projets · défile pour parcourir →</span>
+            </div>
+
+            {
+              PROJECTS.map((p) => (
+                <article class="dc-card" data-dc-card data-dc-tilt data-dc-cursor-text="VOIR ↗">
+                  <div class="dc-card__meta">
+                    <div>
+                      <span class="dc-card__eyebrow">PROJET // {p.n}</span>
+                      <h3 class="dc-card__title" data-dc-title>{p.title}</h3>
+                    </div>
+                    <div>
+                      <dl class="dc-card__specs">
+                        <dt>type</dt>
+                        <dd>{p.type}</dd>
+                        <dt>stack</dt>
+                        <dd>{p.stack}</dd>
+                        <dt>année</dt>
+                        <dd>{p.year}</dd>
+                      </dl>
+                      <span class="dc-card__open" data-dc-magnetic data-dc-mag="0.35">ouvrir ↗</span>
+                    </div>
+                  </div>
+                  <div class="dc-card__visual">
+                    <div class="dc-card__glow" />
+                    <span class="dc-card__ghost" data-dc-parallax="0.07">
+                      {p.n}
+                    </span>
+                    <span class="dc-card__scan" />
+                    <span class="dc-card__stdout">
+                      <span class="dc-card__led" />
+                      STDOUT
+                    </span>
+                    <span class="dc-card__placeholder">visuel</span>
+                    <span class="dc-card__edge" />
+                  </div>
+                </article>
+              ))
+            }
+
+            <div class="dc-tail">
+              <span class="dc-mono dc-faint">// fin de l'index</span>
+              <h2 class="dc-tail__title">On parle ?</h2>
+              <span class="dc-mono dc-meta">↓ continue de défiler</span>
+            </div>
+          </div>
+
+          <div class="dc-scrubber" data-dc-scrubber aria-hidden="true">
+            <div class="dc-scrubber__head">
+              <span>scrub // projets</span>
+              <span>01–{COUNT}</span>
+            </div>
+            <div class="dc-scrubber__rail">
+              <div class="dc-scrubber__fill" data-dc-prog></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SYSTEM.INFO : à propos -->
+      <section class="dc-about" data-dc-reveal aria-label="À propos">
+        <span class="dc-about__kicker">// system.info</span>
+        <div class="dc-about__grid">
+          <div>
+            <h2 class="dc-about__title">À propos</h2>
+            <p class="dc-about__lede">
+              {ROLE}, en freelance. Je conçois et je code des interfaces soignées, du site
+              vitrine à l'application. Ce qui m'intéresse, c'est la matière du web : le détail
+              qui tient, la performance, le geste précis.
+            </p>
+          </div>
+          <dl class="dc-specs">
+            <div class="dc-spec"><dt>LOCALISATION</dt><dd>France · remote</dd></div>
+            <div class="dc-spec"><dt>RÔLE</dt><dd>{ROLE}</dd></div>
+            <div class="dc-spec"><dt>TERRAIN</dt><dd>Interfaces · web · IA</dd></div>
+            <div class="dc-spec"><dt>STACK</dt><dd>TypeScript · React · Astro · WebGL</dd></div>
+            <div class="dc-spec"><dt>DISPONIBILITÉ</dt><dd>Ouvert aux projets</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <!-- CONTACT -->
+      <section class="dc-contact" data-dc-reveal aria-label="Contact">
+        <span class="dc-contact__kicker">&gt; contact --now</span>
+        <p class="dc-contact__line">
+          <a class="dc-contact__mail" data-dc-magnetic data-dc-mag="0.25" href="mailto:hello@tibxla.dev">
+            hello@tibxla.dev
+          </a>
+          <span class="dc-caret"></span>
+        </p>
+        <div class="dc-contact__foot">
+          <nav class="dc-social" aria-label="Réseaux">
+            <a data-dc-magnetic data-dc-mag="0.5" href="https://github.com/Tibxla">github ↗</a>
+            <!-- TODO: vraies URLs LinkedIn / X quand dispo -->
+            <a data-dc-magnetic data-dc-mag="0.5" href="#">linkedin ↗</a>
+            <a data-dc-magnetic data-dc-mag="0.5" href="#">x / twitter ↗</a>
+          </nav>
+          <p class="dc-colophon">© 2026 · tibxla — construit avec retenue · <span data-dc-clock>--:--</span></p>
+        </div>
+      </section>
+
+      <!-- flash « power-on » : l'écran s'allume à l'entrée dans le monde sombre -->
+      <div class="dc-poweron" data-dc-poweron aria-hidden="true"></div>
+
+      <!-- curseur custom : construit par le JS (desktop) -->
     </main>
 
     <script>
       import { initIntro } from '../intro';
+      import { initDedans } from '../dedans';
       void initIntro();
+      initDedans();
     </script>
   </body>
 </html>

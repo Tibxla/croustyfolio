@@ -1,0 +1,839 @@
+/* =========================================================================
+   Monde « dedans » — le portfolio sombre, le « software ».
+   Desktop (pointeur fin, motion ok) : galerie scrubée horizontalement, fond
+   WebGL animé, curseur custom. Mobile / reduced-motion : version calme (liste
+   verticale, fond figé), tout reste lisible et visible sans JS.
+
+   Échelle de z-index sémantique :
+     fond (React Bits) ..... -1
+     contenu ............... 0
+     calques internes carte  1–6
+     barre système ......... 55
+     barre de progression .. 60
+     curseur custom ........ 100–102
+   ========================================================================= */
+
+.dc {
+  /* Rampe d'encre — contrastes vérifiés sur le fond noir #000 (AA texte courant) */
+  --ink-hi: #f4f4f7; /* titres display */
+  --ink: #e8e8ec; /* corps fort, liens */
+  --ink-2: #c8c8d0; /* secondaire */
+  --prose: #9c9ca6; /* paragraphes (~7:1) */
+  --meta: #8a8a96; /* méta mono (~6:1) */
+  --label: #7c7c88; /* petites étiquettes lisibles (~5:1) */
+  --faint: #6b6b76; /* large/non essentiel uniquement (~3.9:1) */
+  --deco: #4f4f5a; /* décoration pure (numéros fantômes, //) */
+
+  --rule: rgba(255, 255, 255, 0.1);
+  --rule-soft: rgba(255, 255, 255, 0.06);
+  --rule-strong: rgba(255, 255, 255, 0.16);
+  --surface: rgba(10, 10, 14, 0.58);
+
+  --chroma-r: rgba(255, 42, 92, 0.7); /* RGB split — rouge */
+  --chroma-c: rgba(0, 198, 255, 0.7); /* RGB split — cyan */
+
+  --ff-display: 'Archivo Narrow', ui-sans-serif, sans-serif;
+  --ff-sans: 'Schibsted Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --ff-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+  --pad-x: 7vw;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  position: relative;
+  color: var(--ink);
+  font-family: var(--ff-sans);
+}
+
+/* ---- fond « dot field » ---- */
+.dc-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: #000;
+}
+/* ===== Allumage de l'écran (power-on) =====
+   En mode scrub, le monde sombre est « éteint » : le dot field ET le premier
+   écran (entrée) sont présents mais cachés (noir). À la fin de l'intro, le nom
+   blow-out et l'écran de l'intro se dissout → tout s'allume D'UN COUP (flash +
+   apparition simultanée). Pas de révélation au scroll. */
+html[data-dc-mode='scrub'] .dc-bg,
+html[data-dc-mode='scrub'] .dc-enter__inner,
+html[data-dc-mode='scrub'] .dc-enter .dc-cue {
+  opacity: 0;
+}
+html[data-dc-mode='scrub'] [data-dedans][data-dc-power] .dc-bg {
+  opacity: 1;
+  transition: opacity 0.3s ease-out;
+}
+html[data-dc-mode='scrub'] [data-dedans][data-dc-power] .dc-enter__inner,
+html[data-dc-mode='scrub'] [data-dedans][data-dc-power] .dc-enter .dc-cue {
+  opacity: 1;
+  transition: opacity 0.4s ease-out 0.05s;
+}
+
+/* le flash de l'allumage (backlight qui s'enclenche, léger flicker) */
+.dc-poweron {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    circle at 50% 44%,
+    rgba(244, 244, 247, 0.92),
+    rgba(244, 244, 247, 0.22) 55%,
+    transparent 78%
+  );
+}
+html[data-dc-mode='scrub'] [data-dedans][data-dc-power] .dc-poweron {
+  animation: dc-poweron 0.6s ease-out forwards;
+}
+@keyframes dc-poweron {
+  0% {
+    opacity: 0;
+  }
+  7% {
+    opacity: 0.8;
+  }
+  16% {
+    opacity: 0.18;
+  }
+  26% {
+    opacity: 0.46;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ---- barre de progression de lecture ---- */
+.dc-topprog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 60;
+  background: linear-gradient(90deg, rgba(255, 42, 92, 0.9), rgba(0, 198, 255, 0.9));
+  transform: scaleX(0);
+  transform-origin: left;
+  will-change: transform;
+}
+
+/* ---- barre système persistante ---- */
+.dc-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 55;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 14px var(--pad-x);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--ff-mono);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: var(--meta);
+}
+.dc-bar__prompt {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dc-bar__status {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex: none;
+}
+.dc-bar__online {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dc-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink);
+  display: inline-block;
+  animation: dc-softpulse 2.4s ease-in-out infinite;
+}
+
+/* ---- utilitaires mono ---- */
+.dc-mono {
+  font-family: var(--ff-mono);
+}
+.dc-faint {
+  color: var(--faint);
+}
+.dc-meta {
+  color: var(--meta);
+}
+.dc-label {
+  color: var(--label);
+}
+.dc-ok {
+  color: var(--ink);
+}
+.dc-dots {
+  color: var(--deco);
+}
+.dc-caret {
+  display: inline-block;
+  width: clamp(10px, 1.2vw, 18px);
+  height: clamp(40px, 7vw, 96px);
+  background: var(--ink);
+  margin-left: 14px;
+  animation: dc-blink 1.1s steps(1) infinite;
+  vertical-align: baseline;
+}
+
+/* =========================================================================
+   ENTRÉE — on sort du noir de l'Intro → boot du monde dedans → Sélection.
+   (Le nom n'est pas répété : il vient d'être livré par l'Intro.)
+   ========================================================================= */
+.dc-enter {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 120px var(--pad-x) 0;
+  overflow: hidden;
+}
+.dc-enter__inner {
+  position: relative;
+  max-width: 1100px;
+}
+.dc-boot {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--meta);
+}
+.dc-enter__title {
+  margin: clamp(28px, 4vh, 54px) 0 0;
+  font-family: var(--ff-display);
+  font-weight: 700;
+  font-size: clamp(64px, 11vw, 168px);
+  line-height: 0.88;
+  letter-spacing: -0.02em;
+  color: var(--ink-hi);
+  text-wrap: balance;
+}
+.dc-enter__sub {
+  margin: 28px 0 0;
+  max-width: 60ch;
+  font-size: clamp(16px, 1.4vw, 20px);
+  line-height: 1.55;
+  color: var(--prose);
+  text-wrap: pretty;
+}
+.dc-cue {
+  position: absolute;
+  left: 50%;
+  bottom: 34px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--meta);
+}
+.dc-cue span:first-child {
+  padding-left: 0.28em;
+}
+.dc-cue__arrow {
+  font-size: 14px;
+  letter-spacing: 0;
+  animation: dc-bob 1.8s ease-in-out infinite;
+}
+
+/* =========================================================================
+   GALERIE — par défaut (calm / sans JS) : liste verticale lisible.
+   Le mode scrub (desktop) la bascule en piste horizontale plus bas.
+   ========================================================================= */
+.dc-gallery {
+  position: relative;
+}
+.dc-gallery__sticky {
+  position: relative;
+}
+.dc-track {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(28px, 5vw, 64px);
+  padding: clamp(40px, 8vh, 90px) var(--pad-x);
+  align-items: stretch;
+}
+.dc-lead,
+.dc-tail {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+}
+.dc-lead__title {
+  margin: 0;
+  font-family: var(--ff-display);
+  font-weight: 700;
+  font-size: clamp(56px, 9vw, 104px);
+  line-height: 0.86;
+  letter-spacing: -0.02em;
+  color: var(--ink-hi);
+}
+.dc-tail__title {
+  margin: 0;
+  font-family: var(--ff-display);
+  font-weight: 700;
+  font-size: clamp(44px, 7vw, 64px);
+  line-height: 0.9;
+  color: var(--ink-hi);
+}
+
+/* ---- carte projet ---- */
+.dc-card {
+  display: grid;
+  grid-template-columns: 1fr;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  position: relative;
+  transition:
+    border-color 0.3s,
+    box-shadow 0.4s;
+}
+.dc-card:hover {
+  border-color: var(--rule-strong);
+}
+.dc-card__meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 32px;
+  padding: clamp(28px, 4vw, 46px) clamp(24px, 3.4vw, 42px);
+}
+.dc-card__eyebrow {
+  font-family: var(--ff-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--faint);
+}
+.dc-card__title {
+  margin: 16px 0 0;
+  font-family: var(--ff-display);
+  font-weight: 700;
+  font-size: clamp(38px, 5vw, 60px);
+  line-height: 0.95;
+  letter-spacing: -0.005em;
+  color: var(--ink-hi);
+}
+.dc-card__specs {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 22px;
+  margin: 0 0 26px;
+  font-family: var(--ff-mono);
+  font-size: 12px;
+}
+.dc-card__specs dt {
+  color: var(--label);
+}
+.dc-card__specs dd {
+  margin: 0;
+  color: var(--meta);
+}
+.dc-card__open {
+  display: inline-block;
+  font-family: var(--ff-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  padding: 10px 20px;
+  cursor: pointer;
+  will-change: transform;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+.dc-card__open:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.45);
+}
+.dc-card__visual {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  background: radial-gradient(130% 130% at 30% 18%, #18181f, #08080b 72%);
+  border-top: 1px solid var(--rule-soft);
+  transition: filter 0.4s;
+}
+.dc-card:hover .dc-card__visual {
+  filter: brightness(1.28);
+}
+.dc-card__glow {
+  position: absolute;
+  inset: -8%;
+  background: radial-gradient(60% 50% at 50% 40%, rgba(255, 255, 255, 0.05), transparent 70%);
+  pointer-events: none;
+}
+.dc-card__ghost {
+  position: absolute;
+  right: 14px;
+  bottom: -0.18em;
+  font-family: var(--ff-display);
+  font-weight: 700;
+  font-size: clamp(120px, 22vw, 200px);
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.045);
+  will-change: transform;
+  pointer-events: none;
+}
+.dc-card__scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 60px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent);
+  pointer-events: none;
+}
+.dc-card__stdout {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--label);
+}
+.dc-card__led {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #52d18a;
+  display: inline-block;
+  opacity: 0.7;
+}
+.dc-card__placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--deco);
+}
+.dc-card__edge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 3px;
+  background: linear-gradient(180deg, rgba(255, 42, 92, 0.6), rgba(0, 198, 255, 0.6));
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.dc-card:hover .dc-card__edge {
+  opacity: 1;
+}
+
+/* ---- scrubber horizontal (mode scrub uniquement) ---- */
+.dc-scrubber {
+  display: none;
+}
+.dc-scrubber__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--meta);
+  margin-bottom: 13px;
+}
+.dc-scrubber__head span {
+  color: var(--label);
+}
+.dc-scrubber__rail {
+  height: 2px;
+  background: rgba(255, 255, 255, 0.12);
+  position: relative;
+  overflow: hidden;
+}
+.dc-scrubber__fill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255, 42, 92, 0.9), rgba(0, 198, 255, 0.9));
+  transform: scaleX(0);
+  transform-origin: left;
+  will-change: transform;
+}
+
+/* =========================================================================
+   SYSTEM.INFO — à propos
+   ========================================================================= */
+.dc-about {
+  padding: clamp(90px, 16vh, 160px) var(--pad-x);
+}
+.dc-about__kicker {
+  display: block;
+  font-family: var(--ff-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--faint);
+  margin-bottom: 42px;
+}
+.dc-about__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(40px, 6vw, 90px);
+  align-items: start;
+}
+.dc-about__title {
+  margin: 0;
+  font-family: var(--ff-display);
+  font-weight: 700;
+  font-size: clamp(48px, 6vw, 84px);
+  line-height: 0.92;
+  color: var(--ink-hi);
+}
+.dc-about__lede {
+  margin: 30px 0 0;
+  max-width: 60ch;
+  font-size: clamp(16px, 1.4vw, 19px);
+  line-height: 1.55;
+  color: var(--prose);
+  text-wrap: pretty;
+}
+.dc-specs {
+  margin: 0;
+  font-family: var(--ff-mono);
+}
+.dc-spec {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 16px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--rule);
+  transition: background 0.2s;
+}
+.dc-spec:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+.dc-spec dt {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--label);
+}
+.dc-spec dd {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+/* =========================================================================
+   CONTACT
+   ========================================================================= */
+.dc-contact {
+  padding: clamp(90px, 14vh, 130px) var(--pad-x) 70px;
+  border-top: 1px solid var(--rule);
+}
+.dc-contact__kicker {
+  display: block;
+  font-family: var(--ff-mono);
+  font-size: 13px;
+  color: var(--faint);
+  margin-bottom: 24px;
+}
+.dc-contact__line {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.dc-contact__mail {
+  font-family: var(--ff-display);
+  font-weight: 700;
+  font-size: clamp(40px, 9vw, 128px);
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  color: var(--ink-hi);
+  text-decoration: none;
+  will-change: transform;
+}
+.dc-contact__mail:hover {
+  text-shadow: -3px 0 var(--chroma-r), 3px 0 var(--chroma-c);
+}
+.dc-contact__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: clamp(40px, 7vh, 70px);
+}
+.dc-social {
+  display: flex;
+  gap: 28px;
+  font-family: var(--ff-mono);
+  font-size: 13px;
+}
+.dc-social a {
+  color: var(--prose);
+  text-decoration: none;
+  will-change: transform;
+  transition: color 0.2s;
+}
+.dc-social a:hover {
+  color: #fff;
+}
+.dc-colophon {
+  margin: 0;
+  font-family: var(--ff-mono);
+  font-size: 12px;
+  color: var(--faint);
+  text-align: right;
+}
+
+/* =========================================================================
+   CURSEUR — natif (« classique »), conservé. Petit effet terminal : un caret
+   bloc clignotant qui suit le pointeur avec un léger retard. Construit par le JS,
+   affiché seulement quand le monde dedans est actif.
+   ========================================================================= */
+.dc-caret {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  width: 7px;
+  height: 16px;
+  background: #fff;
+  pointer-events: none;
+  mix-blend-mode: difference;
+  transform: translate(-100px, -100px) translate(0, -50%);
+  animation: dc-caretblink 1.1s steps(1) infinite;
+  will-change: transform;
+}
+[data-dedans][data-dc-cursor] .dc-caret {
+  display: block;
+}
+@keyframes dc-caretblink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dc-caret {
+    animation: none;
+  }
+}
+
+/* =========================================================================
+   MODE SCRUB (desktop, motion ok) — bascule horizontale + chrome révélée.
+   ========================================================================= */
+/* On remonte le monde sombre d'un écran pour qu'il chevauche la fin du pin de
+   l'intro : ainsi l'écran d'entrée est déjà CADRÉ quand l'écran s'allume — plus
+   besoin de scroller pour voir les écritures. (Pendant l'intro, le contenu du
+   dedans est opacity 0 et le fond éteint, donc rien ne déborde sur le bureau.) */
+html[data-dc-mode='scrub'] .dc {
+  margin-top: -100svh;
+}
+html[data-dc-mode='scrub'] .dc-gallery__sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+html[data-dc-mode='scrub'] .dc-track {
+  flex-direction: row;
+  align-items: center;
+  gap: 90px;
+  height: 100%;
+  padding: 0 var(--pad-x);
+  will-change: transform;
+}
+html[data-dc-mode='scrub'] .dc-lead {
+  flex: none;
+  width: 520px;
+  height: 560px;
+  max-width: none;
+  margin: 0;
+}
+html[data-dc-mode='scrub'] .dc-tail {
+  flex: none;
+  width: 460px;
+  height: 560px;
+  max-width: none;
+  margin: 0;
+}
+html[data-dc-mode='scrub'] .dc-card {
+  flex: none;
+  grid-template-columns: 1fr 1fr;
+  width: 880px;
+  height: 560px;
+  max-width: none;
+  margin: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+html[data-dc-mode='scrub'] .dc-card:hover {
+  box-shadow:
+    -14px 0 70px rgba(255, 42, 92, 0.1),
+    14px 0 70px rgba(0, 198, 255, 0.1);
+}
+html[data-dc-mode='scrub'] .dc-card__meta {
+  border-right: 1px solid var(--rule-soft);
+}
+html[data-dc-mode='scrub'] .dc-card__visual {
+  aspect-ratio: auto;
+  height: 100%;
+  border-top: none;
+}
+html[data-dc-mode='scrub'] .dc-scrubber {
+  display: block;
+  position: absolute;
+  left: var(--pad-x);
+  right: var(--pad-x);
+  bottom: 46px;
+  z-index: 5;
+}
+html[data-dc-mode='scrub'] .dc-about__grid {
+  grid-template-columns: 1.1fr 1fr;
+}
+
+/* Chrome (barre + progression) cachée tant qu'on n'est pas dans le dedans */
+html[data-dc-mode='scrub'] .dc-bar {
+  opacity: 0;
+  transform: translateY(-101%);
+  transition:
+    opacity 0.6s var(--ease-out),
+    transform 0.6s var(--ease-out);
+}
+html[data-dc-mode='scrub'] .dc-topprog {
+  opacity: 0;
+  transition: opacity 0.6s var(--ease-out);
+}
+html[data-dc-mode='scrub'] [data-dedans][data-dc-active] .dc-bar {
+  opacity: 1;
+  transform: none;
+}
+html[data-dc-mode='scrub'] [data-dedans][data-dc-active] .dc-topprog {
+  opacity: 1;
+}
+
+/* Tablette/desktop calm : la liste verticale gagne deux colonnes pour les cartes */
+@media (min-width: 720px) {
+  html:not([data-dc-mode='scrub']) .dc-card {
+    grid-template-columns: 1.05fr 1fr;
+  }
+  html:not([data-dc-mode='scrub']) .dc-card__meta {
+    border-right: 1px solid var(--rule-soft);
+  }
+  html:not([data-dc-mode='scrub']) .dc-card__visual {
+    aspect-ratio: auto;
+    border-top: none;
+  }
+}
+
+/* =========================================================================
+   RÉVÉLATIONS — progressive enhancement : caché seulement si JS + motion ok.
+   ========================================================================= */
+html[data-dc-enhanced] [data-dc-reveal] {
+  opacity: 0;
+  transform: translateY(30px);
+  filter: blur(6px);
+  transition:
+    opacity 0.9s var(--ease-out),
+    transform 0.9s var(--ease-out),
+    filter 0.9s var(--ease-out);
+}
+html[data-dc-enhanced] [data-dc-reveal][data-dc-shown] {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+/* =========================================================================
+   KEYFRAMES
+   ========================================================================= */
+@keyframes dc-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes dc-softpulse {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes dc-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(5px);
+  }
+}
+
+/* =========================================================================
+   REDUCED MOTION — version calme : pas d'animation décorative.
+   (Le fond WebGL est dessiné une seule fois côté JS ; la galerie reste en
+   liste verticale puisque le mode scrub n'est jamais activé.)
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .dc-dot,
+  .dc-caret,
+  .dc-cue__arrow,
+  .dc-card__led {
+    animation: none;
+  }
+  .dc-caret {
+    opacity: 0.9;
+  }
+}

@@ -1,5 +1,5 @@
 :root {
-  --bg-dark: #07070a; /* le monde « dedans » : sombre */
+  --bg-dark: #000; /* le monde « dedans » : noir, en couture avec la frame finale de l'intro */
 }
 
 * {
