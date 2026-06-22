@@ -1,0 +1,7 @@
+# Le chargement bloque sur le préchargement complet, pas de scrub progressif
+
+Décision : pendant **Le chargement**, on précharge et décode **les 244 frames en entier** (puis on lève le verrou de scroll) avant que le **Scrub** soit opérable. On n'ouvre **pas** un scrub progressif (débloquer tôt sur les premières frames, finir en tâche de fond, clamper la progression à la frontière décodée).
+
+Pourquoi : le Scrub est un seeking image-par-image piloté au scroll (cf. `0002`). Si le visiteur scrub plus vite que le décodage, il tombe sur une frame pas prête → frame blanche / saccade, pire qu'une courte attente honnête. Et le public du chargement est **desktop-broadband** : le tactile et `prefers-reduced-motion` sautent toute l'Intro (cf. `0004`), donc le scénario « 40 s sur 3G » ne touche personne qui voit le loader. L'attente réelle est de ~2-5 s. Le scrub progressif ajoute une vraie complexité et un mode d'échec (un « mur » invisible si le scrub dépasse le décodage) au bénéfice d'une frange étroite (desktop sur lien lent). On préfère traiter l'attente autrement : un readout honnête (fraction de frames réelle) + un ticker discret la rendent vivante et crédible, et les polices se chargent désormais **en parallèle** des frames (au lieu d'après) pour raccourcir la fin de course.
+
+À ne pas « optimiser » : le blocage est **intentionnel**. Avant de basculer en chargement progressif, mesurer un vrai bounce desktop sur connexion lente — sinon on importe le risque de saccade sans gain pour le public concerné.
