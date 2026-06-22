@@ -156,7 +156,9 @@ export function initDedans(): void {
   const updateCareer = (): void => {
     if (!careerSection || !careerFill) return;
     const r = careerSection.getBoundingClientRect();
-    const p = Math.max(0, Math.min(1, (window.innerHeight * 0.82 - r.top) / (r.height * 0.9)));
+    // Le dénominateur = distance de scroll sur laquelle le point descend de haut
+    // en bas ; plus il est grand, plus la descente est lente (1.2 = calée au scroll).
+    const p = Math.max(0, Math.min(1, (window.innerHeight * 0.82 - r.top) / (r.height * 1.2)));
     careerFill.style.transform = `scaleY(${p.toFixed(3)})`;
     if (careerDot) careerDot.style.top = `${(p * 100).toFixed(2)}%`;
   };
