@@ -1,0 +1,37 @@
+---
+// Balises <head> communes : meta description, canonical, Open Graph, Twitter Card.
+// Centralisé pour que les deux pages (index, edifig) ne divergent pas.
+// Le JSON-LD spécifique à chaque page reste dans la page (Person sur l'accueil,
+// CreativeWork sur l'étude de cas). URLs absolues construites via Astro.site
+// (défini dans astro.config.mjs) — requis par Open Graph.
+interface Props {
+  title: string;
+  description: string;
+  path?: string; // chemin de la page, ex. '/' ou '/edifig'
+  type?: 'website' | 'article';
+  image?: string; // chemin de l'image OG (raster 1200×630, pas de SVG)
+}
+const { title, description, path = '/', type = 'website', image = '/og.png' } = Astro.props;
+const site = Astro.site ?? new URL('https://thibaudtl.xyz');
+const canonical = new URL(path, site);
+const ogImage = new URL(image, site);
+---
+<title>{title}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical.href} />
+
+<meta property="og:type" content={type} />
+<meta property="og:locale" content="fr_FR" />
+<meta property="og:site_name" content="Thibaud Thomas-Lamotte" />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical.href} />
+<meta property="og:image" content={ogImage.href} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Thibaud Thomas-Lamotte — Développeur full-stack & IA" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImage.href} />

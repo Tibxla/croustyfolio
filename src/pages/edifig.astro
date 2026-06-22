@@ -8,6 +8,7 @@ import '@fontsource/ibm-plex-mono/400.css';
 import '@fontsource/ibm-plex-mono/500.css';
 import '../styles/global.css';
 import '../styles/dedans.css';
+import Seo from '../components/Seo.astro';
 
 // Étude de cas Edifig : l'écran de profondeur de la fiche système (cf. CONTEXT.md).
 // On descend d'un cran dans le « système » : même DA terminal, lecture posée.
@@ -45,6 +46,27 @@ const METRICS = [
   { value: '~1 600', label: 'tests Vitest' },
   { value: '30', label: 'décisions tracées (ADR)' },
 ];
+
+const PAGE_TITLE = `${TITLE} — étude de cas · Thibaud Thomas-Lamotte`;
+const DESCRIPTION =
+  'Étude de cas Edifig : le chemin de fer numérique de Propriétés Le Figaro, conçu et livré en production en huit semaines, en autonomie.';
+
+// JSON-LD : l'étude de cas, rattachée à l'auteur (consolide l'entité Person).
+const caseSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'CreativeWork',
+  name: 'Edifig — étude de cas',
+  about: 'Chemin de fer numérique pour Propriétés Le Figaro',
+  url: 'https://thibaudtl.xyz/edifig',
+  inLanguage: 'fr',
+  author: {
+    '@type': 'Person',
+    name: 'Thibaud Thomas-Lamotte',
+    alternateName: 'Tibxla',
+    url: 'https://thibaudtl.xyz/',
+    sameAs: ['https://github.com/Tibxla', 'https://www.linkedin.com/in/thibaudthomaslamotte'],
+  },
+};
 ---
 
 <!doctype html>
@@ -54,11 +76,8 @@ const METRICS = [
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="theme-color" content="#000000" />
-    <title>{TITLE} — étude de cas · Thibaud Thomas-Lamotte</title>
-    <meta
-      name="description"
-      content="Étude de cas Edifig : le chemin de fer numérique de Propriétés Le Figaro, conçu et livré en production en huit semaines, en autonomie."
-    />
+    <Seo title={PAGE_TITLE} description={DESCRIPTION} path="/edifig" type="article" />
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(caseSchema)} />
   </head>
   <body>
     <main class="dc cs">
