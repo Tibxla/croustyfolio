@@ -71,6 +71,10 @@ export interface FlowTextOptions {
   name: string;
   role: string;
   reduce?: boolean;
+  /** Taille du nom en fraction de la hauteur du stage (défaut 0.13, comme l'intro). */
+  nameScale?: number;
+  /** Forcer les majuscules (défaut true, comme l'intro). false → texte tel quel. */
+  upper?: boolean;
 }
 
 export class FlowText {
@@ -84,6 +88,8 @@ export class FlowText {
   private textCanvas: HTMLCanvasElement;
   private tctx: CanvasRenderingContext2D;
   private dpr: number;
+  private stage: HTMLElement;
+  private nameScale: number;
 
   private name: string;
   private role: string;
@@ -108,10 +114,14 @@ export class FlowText {
   private onMouse: (e: MouseEvent) => void;
   private onTouch: (e: TouchEvent) => void;
   private ro: ResizeObserver;
+  private listening = false;
 
   constructor(stage: HTMLElement, opts: FlowTextOptions) {
-    this.name = opts.name.toUpperCase();
-    this.role = opts.role.toUpperCase();
+    this.stage = stage;
+    this.nameScale = opts.nameScale ?? 0.13;
+    const upper = opts.upper !== false;
+    this.name = upper ? opts.name.toUpperCase() : opts.name;
+    this.role = upper ? opts.role.toUpperCase() : opts.role;
     this.dpr = Math.min(window.devicePixelRatio || 1, 2);
 
     this.renderer = new Renderer({ dpr: this.dpr, alpha: true });
@@ -171,10 +181,7 @@ export class FlowText {
     this.onTouch = (e) => {
       if (e.touches[0]) this.handleMove(e.touches[0].clientX, e.touches[0].clientY);
     };
-    if (!opts.reduce) {
-      window.addEventListener('mousemove', this.onMouse);
-      window.addEventListener('touchmove', this.onTouch, { passive: true });
-    }
+    if (!opts.reduce) this.setListeners(true);
   }
 
   // --- API ---
@@ -210,8 +217,11 @@ export class FlowText {
   }
 
   resize(): void {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+    // Taille = le conteneur (pas le viewport) → réutilisable hors intro (ex. contact).
+    // L'intro reste identique : son stage occupe tout l'écran.
+    const r = this.stage.getBoundingClientRect();
+    const w = Math.max(1, Math.round(r.width));
+    const h = Math.max(1, Math.round(r.height));
     this.renderer.setSize(w, h);
     this.program.uniforms.uAspect.value = w / h;
     this.flowmap.aspect = w / h;
@@ -223,9 +233,31 @@ export class FlowText {
     cancelAnimationFrame(this.raf);
     this.running = false;
     this.ro.disconnect();
-    window.removeEventListener('mousemove', this.onMouse);
-    window.removeEventListener('touchmove', this.onTouch);
+    this.setListeners(false);
+    // Libère réellement le contexte WebGL (comme LineWaves.dispose) : sans ça le
+    // contexte reste vivant après retrait du canvas et compte dans la limite du
+    // navigateur (~8-16 contextes).
+    this.renderer.gl.getExtension('WEBGL_lose_context')?.loseContext();
     this.gl.canvas.parentElement?.removeChild(this.gl.canvas);
+  }
+
+  // Attache/détache les écouteurs pointeur globaux. Permet de suspendre
+  // l'alimentation (rendu WebGL + readback canvas) quand le texte est hors écran.
+  setListening(on: boolean): void {
+    this.setListeners(on);
+    if (on) this.wake();
+  }
+
+  private setListeners(on: boolean): void {
+    if (on === this.listening) return;
+    this.listening = on;
+    if (on) {
+      window.addEventListener('mousemove', this.onMouse);
+      window.addEventListener('touchmove', this.onTouch, { passive: true });
+    } else {
+      window.removeEventListener('mousemove', this.onMouse);
+      window.removeEventListener('touchmove', this.onTouch);
+    }
   }
 
   // --- interne ---
@@ -334,16 +366,28 @@ export class FlowText {
     const cx = w / 2;
     const cy = h * 0.42;
 
-    const nameSize = this.fit(this.name, 700, '"Archivo Narrow", sans-serif', h * 0.13, w * 0.86);
-    ctx.font = `700 ${nameSize.toFixed(0)}px "Archivo Narrow", sans-serif`;
+    const family = '"Archivo Narrow", sans-serif';
+    // Multi-lignes : `name` peut contenir des "\n" → chaque ligne est rendue empilée
+    // et centrée. Mono-ligne (intro, contact) = comportement inchangé.
+    const lines = this.name.split('\n');
+    const longest = lines.reduce((a, b) => (b.length > a.length ? b : a), '');
+    // taille bornée par la largeur (ligne la plus longue) ET la hauteur (nb de lignes)
+    const widthCap = this.fit(longest, 700, family, h * this.nameScale, w * 0.86);
+    const nameSize = Math.min(widthCap, (h * 0.84) / lines.length);
+    ctx.font = `700 ${nameSize.toFixed(0)}px ${family}`;
     ctx.letterSpacing = `${(nameSize * 0.015).toFixed(1)}px`;
-    ctx.fillText(this.name, cx, cy);
-
-    const roleSize = Math.min(h * 0.022, w * 0.014);
-    ctx.font = `500 ${roleSize.toFixed(0)}px "Schibsted Grotesk", sans-serif`;
-    ctx.letterSpacing = `${(roleSize * 0.32).toFixed(1)}px`;
-    ctx.fillText(this.role, cx + roleSize * 0.16, cy + nameSize * 0.62);
+    const top = cy - (nameSize * (lines.length - 1)) / 2;
+    lines.forEach((line, i) => ctx.fillText(line, cx, top + i * nameSize));
     ctx.letterSpacing = '0px';
+
+    if (this.role) {
+      const lastY = top + nameSize * (lines.length - 1);
+      const roleSize = Math.min(h * 0.022, w * 0.014);
+      ctx.font = `500 ${roleSize.toFixed(0)}px "Schibsted Grotesk", sans-serif`;
+      ctx.letterSpacing = `${(roleSize * 0.32).toFixed(1)}px`;
+      ctx.fillText(this.role, cx + roleSize * 0.16, lastY + nameSize * 0.62);
+      ctx.letterSpacing = '0px';
+    }
 
     this.texture.image = this.textCanvas;
     this.texture.needsUpdate = true;

@@ -141,6 +141,92 @@ html.lenis body {
   }
 }
 
+/* « Passer l'intro » : contrôle discret présent du chargement à l'entrée dans le
+   dedans. Pill givré clair + texte sombre (même famille que le cue) : le givre
+   donne un fond constant, donc le libellé reste lisible du bureau blanc au plus
+   sombre du scrub. Révélé par le JS (data-ready) ; aller simple au clic/Échap. */
+.intro__skip {
+  position: absolute;
+  right: clamp(1.1rem, 3vw, 2.2rem);
+  bottom: clamp(1.1rem, 3vh, 2.2rem);
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+  margin: 0;
+  padding: 0.55rem 0.95rem;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  -webkit-backdrop-filter: blur(8px) saturate(1.1);
+  backdrop-filter: blur(8px) saturate(1.1);
+  color: #1a1a1f;
+  font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 600ms ease,
+    transform 600ms ease,
+    color 200ms ease,
+    background-color 200ms ease,
+    border-color 200ms ease;
+}
+.intro__skip[data-ready] {
+  opacity: 0.62; /* discret, comme le cue */
+  transform: none;
+}
+.intro__skip:hover,
+.intro__skip:focus-visible {
+  opacity: 1;
+  color: #000;
+  background: rgba(255, 255, 255, 0.82);
+  border-color: rgba(0, 0, 0, 0.28);
+}
+.intro__skip:focus-visible {
+  outline: 2px solid rgba(0, 0, 0, 0.55);
+  outline-offset: 3px;
+}
+.intro__skip-arrow {
+  font-size: 0.85rem;
+  letter-spacing: 0;
+  transition: transform 200ms ease;
+}
+.intro__skip:hover .intro__skip-arrow,
+.intro__skip:focus-visible .intro__skip-arrow {
+  transform: translateX(3px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro__skip {
+    transition: opacity 200ms ease;
+    transform: none;
+  }
+  .intro__skip-arrow {
+    transition: none;
+  }
+}
+
+/* Fondu au noir qui masque le saut quand on passe l'intro (extinction →
+   allumage du dedans). Au-dessus de tout (barre, curseur, flash). */
+.intro__cover {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+.intro__cover[data-on] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 /* --- Portfolio (placeholder sombre, tranches suivantes) --- */
 .portfolio {
   position: relative;

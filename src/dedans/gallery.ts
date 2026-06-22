@@ -1,115 +1,128 @@
-// Galerie des projets : on la scrube horizontalement comme l'Intro. Une section
-// haute (`.dc-gallery`) sert de piste de scroll ; à l'intérieur, un bloc `sticky`
-// plein écran tient la `.dc-track` qu'on translate selon la progression — donc
-// « le scroll reste le bouton », sans lecture auto. Pendant qu'on scrube vite,
-// les titres se dédoublent en chroma (écho de l'aberration de l'Intro).
-//
-// En mode « calm » (mobile / reduced-motion) la galerie n'est pas activée : le
-// CSS la rend en simple liste verticale et ce module reste muet.
-const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
+// Sélection — liste verticale de projets (inspiré Tajmirul/portfolio-2.0) : au
+// survol d'une ligne, les autres s'estompent et une preview (la télémétrie du
+// projet) suit le curseur. Scroll natif, aucun pin. Desktop (`enabled`) seulement ;
+// en mode calm le CSS rend une liste à plat lisible et ce module reste muet.
+import { scramble } from './texteffects';
+import { countElement } from './counters';
+
 const clamp = (v: number, a: number, b: number): number => Math.max(a, Math.min(b, v));
+const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 
 export class Gallery {
-  private readonly galleryEl: HTMLElement | null;
-  private readonly trackEl: HTMLElement | null;
-  private readonly progEl: HTMLElement | null;
+  private readonly list: HTMLElement | null;
+  private readonly preview: HTMLElement | null;
+  private readonly container: HTMLElement | null;
   private readonly topprogEl: HTMLElement | null;
-  private readonly titles: HTMLElement[];
-  private readonly parallax: HTMLElement[];
-  private readonly cards: HTMLElement[];
-  private readonly hover = new Map<HTMLElement, boolean>();
-
-  private scrub = 0;
-  private scrubTarget = 0;
-  private scrubVel = 0;
-  private travel = 0;
+  private readonly rows: HTMLElement[];
+  private readonly panels = new Map<string, HTMLElement>();
+  private overList = false;
+  private targetY = 0;
+  private curY = 0;
+  private active: string | null = null;
+  private mx = window.innerWidth;
+  private my = 0;
+  private px = 0;
+  private py = 0;
 
   constructor(
     root: HTMLElement,
     private readonly enabled: boolean,
   ) {
-    this.galleryEl = root.querySelector('[data-dc-gallery]');
-    this.trackEl = root.querySelector('[data-dc-track]');
-    this.progEl = root.querySelector('[data-dc-prog]');
+    this.list = root.querySelector('[data-dc-projlist]');
+    this.preview = root.querySelector('[data-dc-projpreview]');
+    this.container = root.querySelector('[data-dc-gallery]');
     this.topprogEl = root.querySelector('[data-dc-topprog]');
-    this.titles = [...root.querySelectorAll<HTMLElement>('[data-dc-title]')];
-    this.parallax = [...root.querySelectorAll<HTMLElement>('[data-dc-parallax]')];
-    this.cards = [...root.querySelectorAll<HTMLElement>('[data-dc-card]')];
+    this.rows = [...root.querySelectorAll<HTMLElement>('[data-dc-proj]')];
+    for (const el of root.querySelectorAll<HTMLElement>('[data-dc-prev]')) {
+      const slug = el.dataset.dcPrev;
+      if (slug) this.panels.set(slug, el);
+    }
+    if (this.enabled) this.bind();
+  }
 
-    if (this.enabled) {
-      for (const card of this.cards) {
-        card.addEventListener('mouseenter', () => this.hover.set(card, true));
-        card.addEventListener('mouseleave', () => this.hover.set(card, false));
-      }
-      this.layout();
+  private bind(): void {
+    for (const row of this.rows) {
+      row.addEventListener('mouseenter', () => this.activate(row.dataset.dcSlug ?? null));
+    }
+    if (this.list) {
+      this.list.addEventListener('mouseenter', () => {
+        this.overList = true;
+      });
+      this.list.addEventListener('mouseleave', () => {
+        this.overList = false;
+        this.activate(null);
+      });
+    }
+    window.addEventListener('mousemove', (e) => {
+      this.mx = e.clientX;
+      this.my = e.clientY;
+      this.onMove(e.clientY);
+    });
+  }
+
+  // Active une ligne : estompe les autres, montre sa preview (et l'allume si une
+  // ligne est survolée, l'éteint sinon).
+  private activate(slug: string | null): void {
+    if (slug === this.active) return;
+    this.active = slug;
+    const has = slug !== null;
+    for (const row of this.rows) {
+      row.toggleAttribute('data-active', has && row.dataset.dcSlug === slug);
+    }
+    for (const [s, panel] of this.panels) {
+      panel.toggleAttribute('data-on', s === slug);
+    }
+    this.preview?.toggleAttribute('data-on', has);
+    this.list?.toggleAttribute('data-dc-hover', has);
+    // CHG-3 : à chaque changement, le contenu « se recharge » — la tagline se
+    // déchiffre, les métriques roulent de 0 vers leur valeur.
+    if (has && slug) {
+      const panel = this.panels.get(slug);
+      if (panel) this.morphPanel(panel);
     }
   }
 
-  // Hauteur de la piste de scroll = un écran + le débordement horizontal de la
-  // track (mapping ~1:1 : un pixel scrollé → un pixel translaté).
-  layout(): void {
-    if (!this.enabled || !this.galleryEl || !this.trackEl) return;
-    this.travel = Math.max(0, this.trackEl.scrollWidth - window.innerWidth);
-    this.galleryEl.style.height = `${window.innerHeight + this.travel}px`;
+  private morphPanel(panel: HTMLElement): void {
+    const tagline = panel.querySelector<HTMLElement>('.dc-prev__tagline');
+    if (tagline) {
+      const final = tagline.dataset.dcFinal ?? tagline.textContent ?? '';
+      tagline.dataset.dcFinal = final;
+      scramble(tagline, final, { duration: 600 });
+    }
+    panel.querySelectorAll<HTMLElement>('.dc-prev__num').forEach((n) => countElement(n, 700));
   }
 
-  private measure(): void {
-    if (this.galleryEl) {
-      const rect = this.galleryEl.getBoundingClientRect();
-      const total = this.galleryEl.offsetHeight - window.innerHeight;
-      this.scrubTarget = clamp(total > 0 ? -rect.top / total : 0, 0, 1);
-    }
-    if (this.topprogEl) {
-      const doc = document.documentElement;
-      const totalDoc = doc.scrollHeight - window.innerHeight;
-      const gp = totalDoc > 0 ? doc.scrollTop / totalDoc : 0;
-      this.topprogEl.style.transform = `scaleX(${clamp(gp, 0, 1).toFixed(4)})`;
-    }
+  private onMove(clientY: number): void {
+    if (!this.overList || !this.container || !this.preview) return;
+    const rect = this.container.getBoundingClientRect();
+    const ph = this.preview.offsetHeight;
+    this.targetY = clamp(clientY - rect.top - ph / 2, 0, Math.max(0, rect.height - ph));
   }
+
+  // Plus de géométrie à recalculer (pas de piste horizontale). Gardé pour l'API.
+  layout(): void {}
 
   tick(): void {
-    if (!this.enabled) return;
-    this.measure();
-
-    const prev = this.scrub;
-    this.scrub = lerp(this.scrub, this.scrubTarget, 0.16);
-    this.scrubVel = this.scrubVel * 0.82 + Math.abs(this.scrub - prev) * 0.18;
-
-    if (this.trackEl) {
-      this.trackEl.style.transform = `translate3d(${(-this.scrub * this.travel).toFixed(2)}px, 0, 0)`;
+    if (this.enabled && this.preview) {
+      this.curY = lerp(this.curY, this.targetY, 0.14);
+      // 3D-2 : parallaxe interne — le fond décalé (::before) se déplace selon le
+      // curseur (--px/--py), ce qui révèle l'épaisseur de la carte (pas d'inclinaison).
+      const tpx = clamp((this.mx / window.innerWidth) * 2 - 1, -1, 1);
+      const tpy = clamp((this.my / window.innerHeight) * 2 - 1, -1, 1);
+      this.px = lerp(this.px, tpx, 0.1);
+      this.py = lerp(this.py, tpy, 0.1);
+      this.preview.style.setProperty('--px', this.px.toFixed(3));
+      this.preview.style.setProperty('--py', this.py.toFixed(3));
+      this.preview.style.transform = `translateY(${this.curY.toFixed(1)}px)`;
     }
-    if (this.progEl) this.progEl.style.transform = `scaleX(${this.scrub.toFixed(4)})`;
-
-    // Aberration chroma des titres : selon la vitesse de scrub + bonus au survol.
-    const base = clamp(this.scrubVel * 120, 0, 8);
-    for (const title of this.titles) {
-      const card = title.closest<HTMLElement>('[data-dc-card]');
-      const s = base + (card && this.hover.get(card) ? 3 : 0);
-      if (s > 0.15) {
-        title.style.textShadow = `${s.toFixed(1)}px 0 rgba(255,42,92,.7), ${(-s).toFixed(1)}px 0 rgba(0,198,255,.7)`;
-        title.style.color = card && this.hover.get(card) ? '#ffffff' : '';
-      } else if (title.style.textShadow !== '') {
-        title.style.textShadow = '';
-        title.style.color = '';
-      }
-    }
-
-    // Parallaxe de profondeur : le grand numéro fantôme dérive selon la position
-    // de sa carte par rapport au centre du viewport.
-    if (this.parallax.length) {
-      const vc = window.innerWidth / 2;
-      for (const el of this.parallax) {
-        const host = el.closest<HTMLElement>('[data-dc-card]') ?? el;
-        const rect = host.getBoundingClientRect();
-        const factor = parseFloat(el.dataset.dcParallax ?? '0.06');
-        const off = (rect.left + rect.width / 2 - vc) * factor;
-        el.style.transform = `translateX(${off.toFixed(1)}px)`;
-      }
+    // Progression de lecture (barre du haut).
+    if (this.topprogEl) {
+      const doc = document.documentElement;
+      const total = doc.scrollHeight - window.innerHeight;
+      const p = total > 0 ? clamp(doc.scrollTop / total, 0, 1) : 0;
+      this.topprogEl.style.transform = `scaleX(${p.toFixed(4)})`;
     }
   }
 
-  dispose(): void {
-    if (this.galleryEl) this.galleryEl.style.height = '';
-    if (this.trackEl) this.trackEl.style.transform = '';
-  }
+  dispose(): void {}
 }
