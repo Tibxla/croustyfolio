@@ -41,11 +41,10 @@ export async function initIntro(): Promise<void> {
   document.documentElement.dataset.introMode = 'scrub';
 
   // On rejoue l'Intro à CHAQUE chargement (cf. CONTEXT.md « Passer l'intro » :
-  // aucune persistance). Or le navigateur restaure par défaut la position de
-  // scroll précédente : au reload depuis le dedans, on se retrouvait coincé en
-  // bas, scroll verrouillé, sans repasser par l'Intro. On coupe la restauration
-  // et on repart du haut.
-  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  // aucune persistance). La restauration de scroll est coupée TÔT, en inline dans
+  // le <head> d'index.astro (avant toute restauration navigateur) — sinon au
+  // refresh on restait parfois coincé en bas sans repasser par le loader. Ici on
+  // ne fait que (re)caler en haut une fois le module exécuté.
   window.scrollTo(0, 0);
 
   // Lenis créé tout de suite, puis STOPPÉ → scroll verrouillé pendant le

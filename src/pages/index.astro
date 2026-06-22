@@ -9,10 +9,27 @@ import '@fontsource/ibm-plex-mono/500.css';
 import '../styles/global.css';
 import '../styles/dedans.css';
 import { PROJECTS } from '../dedans/projects';
+import Seo from '../components/Seo.astro';
 
 const NAME = 'Thibaud Thomas-Lamotte';
 const ROLE = 'Développeur full-stack & IA';
 const COUNT = String(PROJECTS.length).padStart(2, '0');
+const DESCRIPTION = `Portfolio de ${NAME} (Tibxla) — ${ROLE}. Des produits livrés en production, du modèle métier au pixel.`;
+
+// JSON-LD d'entité : relie le domaine à la personne (recherche par nom + knowledge
+// panel). `sameAs` consolide les profils GitHub/LinkedIn sous la même identité.
+const personSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: NAME,
+  alternateName: 'Tibxla',
+  jobTitle: ROLE,
+  url: 'https://thibaudtl.xyz/',
+  email: 'mailto:contact@thibaudtl.xyz',
+  image: 'https://thibaudtl.xyz/portrait.webp',
+  address: { '@type': 'PostalAddress', addressRegion: 'Île-de-France', addressCountry: 'FR' },
+  sameAs: ['https://github.com/Tibxla', 'https://www.linkedin.com/in/thibaudthomaslamotte'],
+};
 
 // Stack curée (~16) en deux rangées à contre-sens. Le « range » va dans `ALSO`.
 const STACK_ROW_1 = ['TypeScript', 'React', 'Next.js', 'Astro', 'Node', 'Tailwind', 'WebGL · OGL', 'GSAP'];
@@ -60,10 +77,18 @@ const CAREER: readonly CareerEntry[] = [
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script is:inline>
+      // Repartir du haut à CHAQUE (re)chargement : l'Intro se rejoue (cf. CONTEXT.md
+      // « Passer l'intro »). Coupé ici en synchrone, AVANT toute restauration de scroll
+      // du navigateur — fiabilise le retour sur le loader au refresh (sinon on restait
+      // parfois coincé dans le dedans, la restauration arrivant après le module différé).
+      if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+      addEventListener('pageshow', function () { scrollTo(0, 0); });
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="theme-color" content="#000000" />
-    <title>{NAME} — {ROLE}</title>
-    <meta name="description" content={`Portfolio de ${NAME} (Tibxla) — ${ROLE}. Des produits livrés en production, du modèle métier au pixel.`} />
+    <Seo title={`${NAME} — ${ROLE}`} description={DESCRIPTION} path="/" />
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(personSchema)} />
   </head>
   <body>
     <!-- Intro : bureau blanc scrubé au scroll → on entre dans l'écran.
@@ -329,7 +354,7 @@ const CAREER: readonly CareerEntry[] = [
           </button>
           <span class="dc-contact__feedback dc-mono" data-dc-copy-feedback aria-live="polite"></span>
         </div>
-        <p class="dc-contact__invite dc-mono dc-meta">Clique sur l'email ou le numéro pour le copier.</p>
+        <p class="dc-contact__invite dc-mono dc-meta">Une mission, un produit à livrer, une idée à casser ? Écris-moi. <span class="dc-faint">— clique pour copier l'email ou le numéro.</span></p>
         <div class="dc-contact__foot">
           <nav class="dc-social dc-mono" aria-label="Réseaux">
             <a data-dc-magnetic data-dc-mag="0.4" href="https://github.com/Tibxla" target="_blank" rel="noopener">github ↗</a>
