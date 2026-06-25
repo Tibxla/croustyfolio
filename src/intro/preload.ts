@@ -15,10 +15,17 @@ export async function preloadFrames(onProgress?: PreloadProgress): Promise<HTMLI
     try {
       await img.decode();
     } catch {
-      // decode() peut rejeter sur certains navigateurs : on retombe sur load/error.
+      // decode() rejette (EncodingError) quand l'onglet passe en arrière-plan.
+      // L'image est alors souvent DÉJÀ chargée, donc son `onload` ne refirera plus :
+      // sans le garde `img.complete`, on attendrait un événement mort → le pool de
+      // workers se fige et le chargement ne reprend jamais au retour sur l'onglet.
       await new Promise<void>((resolve) => {
-        img.onload = () => resolve();
-        img.onerror = () => resolve();
+        if (img.complete) {
+          resolve();
+        } else {
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+        }
       });
     }
     images[i] = img;
