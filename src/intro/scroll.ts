@@ -7,8 +7,9 @@ import { FRAME_COUNT } from './frames';
 gsap.registerPlugin(ScrollTrigger);
 
 // Distance de scroll consacrée au scrub (en multiples de la hauteur d'écran).
-// Plus c'est grand, plus le scrub est lent et fluide.
-const SCRUB_DISTANCE = '350%';
+// Plus c'est grand, plus le scrub est lent. La fluidité, elle, tient surtout
+// aux 244 frames : même resserré, on garde plusieurs px de scroll par frame.
+const SCRUB_DISTANCE = '210%';
 
 // Lenis (smooth scroll) au niveau de la PAGE. Créé une fois, il vit toute la
 // durée de la page : l'Intro ET le dedans s'appuient dessus (le dedans lit le
