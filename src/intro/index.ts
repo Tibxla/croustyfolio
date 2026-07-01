@@ -6,7 +6,7 @@ import { Nameplate } from './nameplate';
 
 // Plaque signalétique du chargement : une copie des jetons, séparateur de fin
 // inclus (`… 2026 · `) pour une couture régulière à chaque répétition.
-const PLATE_TOKENS = 'TIBXLA · DÉVELOPPEUR · THIBAUDTL.XYZ · PORTFOLIO · 2026 · ';
+const PLATE_TOKENS = 'TIBXLA · DÉVELOPPEUR · THIBAUDTL.COM · PORTFOLIO · 2026 · ';
 
 const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
 

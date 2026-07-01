@@ -12,7 +12,7 @@ interface Props {
   image?: string; // chemin de l'image OG (raster 1200×630, pas de SVG)
 }
 const { title, description, path = '/', type = 'website', image = '/og.png' } = Astro.props;
-const site = Astro.site ?? new URL('https://thibaudtl.xyz');
+const site = Astro.site ?? new URL('https://thibaudtl.com');
 const canonical = new URL(path, site);
 const ogImage = new URL(image, site);
 ---

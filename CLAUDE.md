@@ -15,7 +15,7 @@ npm run build    # build statique
 
 ## Déploiement
 
-Prod sur **Vercel** → **https://thibaudtl.xyz** (projet `croustyfolio`, team `tibxlas-projects` ; le compte perso n'est pas scopable en CLI).
+Prod sur **Vercel** → **https://thibaudtl.com** (projet `croustyfolio`, team `tibxlas-projects` ; le compte perso n'est pas scopable en CLI).
 Repo GitHub connecté ; **branche de prod = `main`** (push `dev` = preview ; pour publier en prod : merge `dev`→`main`).
 Framework épinglé Astro via `vercel.json` (sortie `dist/`). Redéploy manuel : `vercel --prod --scope tibxlas-projects`.
 

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://thibaudtl.xyz/sitemap.xml
+Sitemap: https://thibaudtl.com/sitemap.xml
