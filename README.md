@@ -1,7 +1,7 @@
 # CroustyFolio
 
 Portfolio personnel de **Thibaud Thomas-Lamotte** (Tibxla), développeur full-stack & IA.
-En ligne : [thibaudtl.xyz](https://thibaudtl.xyz)
+En ligne : [thibaudtl.com](https://thibaudtl.com)
 
 Le site se parcourt en **deux mondes**. On part d'un bureau blanc (le *hardware*) qu'on scrube au scroll pour entrer dans l'écran, et on arrive dans le **dedans** : un monde sombre « software » où vivent les projets.
 
@@ -42,4 +42,4 @@ npm run build    # build statique
 
 ---
 
-© 2026 Thibaud Thomas-Lamotte · `contact@thibaudtl.xyz`
+© 2026 Thibaud Thomas-Lamotte · `contact@thibaudtl.com`

@@ -126,7 +126,7 @@ export function initDedans(): void {
     // QUE quand la zone contact est à l'écran ; tout en bas de la page, elle ne
     // tourne donc pas en fond. L'effet de survol reste intact une fois visible.
     const contactFlow = new FlowText(contactStage, {
-      name: 'contact@thibaudtl.xyz',
+      name: 'contact@thibaudtl.com',
       role: '',
       nameScale: 0.4,
       upper: false,

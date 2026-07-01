@@ -6,5 +6,5 @@ import { defineConfig } from 'astro/config';
 // `site` : domaine de prod, requis pour les URLs absolues (canonical, Open Graph)
 // construites dans src/components/Seo.astro via Astro.site.
 export default defineConfig({
-  site: 'https://thibaudtl.xyz',
+  site: 'https://thibaudtl.com',
 });
