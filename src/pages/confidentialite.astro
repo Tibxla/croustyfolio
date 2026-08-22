@@ -1,0 +1,254 @@
+---
+import '@fontsource/archivo-narrow/600.css';
+import '@fontsource/archivo-narrow/700.css';
+import '@fontsource/schibsted-grotesk/400.css';
+import '@fontsource/schibsted-grotesk/500.css';
+import '@fontsource/schibsted-grotesk/600.css';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/500.css';
+import '../styles/global.css';
+import '../styles/dedans.css';
+import Seo from '../components/Seo.astro';
+
+// Page légale : mentions légales + politique de confidentialité, sur une seule page.
+// Deux obligations distinctes traitées ensemble parce qu'elles se lisent ensemble :
+//   - identification de l'éditeur (LCEN, article 1-1 depuis la loi SREN du 21/05/2024,
+//     l'ancien article 6-III ne s'applique plus) ;
+//   - information des personnes (RGPD, articles 12 à 14).
+// Même DA que l'étude de cas : lecture posée, pas de WebGL.
+// ⚠️ ADRESSE : champ à compléter par Thibaud (domicile ou domiciliation), cf. le
+// bloc « editeur » ci-dessous. Tant qu'il vaut ADRESSE_A_COMPLETER, la page ne doit
+// pas être publiée : l'identification serait incomplète.
+const TITLE = 'Mentions légales et confidentialité';
+
+const ADRESSE = 'ADRESSE_A_COMPLETER';
+const HEBERGEUR = 'HEBERGEUR_A_COMPLETER';
+
+const PAGE_TITLE = `${TITLE} · Thibaud Thomas-Lamotte`;
+const DESCRIPTION =
+  'Mentions légales du site thibaudtl.com et information sur le traitement des données personnelles.';
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#000000" />
+    <Seo title={PAGE_TITLE} description={DESCRIPTION} path="/confidentialite" type="article" />
+    <meta name="robots" content="index, follow" />
+  </head>
+  <body>
+    <main class="dc cs">
+      <div class="cs-bg" aria-hidden="true"></div>
+
+      <header class="dc-bar">
+        <span class="dc-bar__prompt">tibxla@croustyfolio:~/légal$</span>
+        <span class="dc-bar__status">
+          <span class="dc-bar__online"><span class="dc-dot"></span>online</span>
+          <span>page légale</span>
+        </span>
+      </header>
+
+      <article class="cs-wrap lg">
+        <h1 class="cs-title">Mentions légales<br />et confidentialité</h1>
+        <p class="cs-lede">
+          Qui édite ce site, comment me joindre, et ce qu'il advient des données quand vous
+          naviguez ici ou quand vous m'écrivez. Dernière mise à jour : août 2026.
+        </p>
+
+        <section class="lg-sec">
+          <h2 class="lg-h2"><span class="dc-faint">&gt;</span> Éditeur du site</h2>
+          <dl class="lg-dl">
+            <dt>Responsable de la publication</dt>
+            <dd>Thibaud Thomas-Lamotte</dd>
+            <dt>Statut</dt>
+            <dd>Entrepreneur individuel, micro-entreprise</dd>
+            <dt>SIRET</dt>
+            <dd>925 338 436 00023</dd>
+            <dt>Code APE</dt>
+            <dd>6201Z, programmation informatique</dd>
+            <dt>TVA</dt>
+            <dd>Non applicable, article 293 B du Code général des impôts</dd>
+            <dt>Adresse</dt>
+            <dd>{ADRESSE}</dd>
+            <dt>Contact</dt>
+            <dd><a href="mailto:contact@thibaudtl.com">contact@thibaudtl.com</a></dd>
+          </dl>
+        </section>
+
+        <section class="lg-sec">
+          <h2 class="lg-h2"><span class="dc-faint">&gt;</span> Hébergement</h2>
+          <p class="lg-p">
+            Ce site est hébergé par {HEBERGEUR}. L'hébergeur assure le stockage et la mise à
+            disposition des pages, sans intervenir sur leur contenu.
+          </p>
+        </section>
+
+        <section class="lg-sec">
+          <h2 class="lg-h2"><span class="dc-faint">&gt;</span> Propriété intellectuelle</h2>
+          <p class="lg-p">
+            Les textes, le code et les visuels de ce site sont l'œuvre de Thibaud Thomas-Lamotte,
+            sauf mention contraire. Les projets présentés restent la propriété de leurs
+            commanditaires respectifs et sont montrés à titre de références professionnelles.
+          </p>
+        </section>
+
+        <section class="lg-sec">
+          <h2 class="lg-h2"><span class="dc-faint">&gt;</span> Données personnelles</h2>
+          <p class="lg-p">
+            <strong>Ce site ne dépose aucun cookie de mesure d'audience ni de publicité</strong>, et
+            n'utilise aucun outil de suivi comportemental. Aucune donnée n'est collectée du simple
+            fait de votre visite, à l'exception des journaux techniques de l'hébergeur (adresse IP,
+            date et heure, page demandée), conservés à des fins de sécurité et de bon fonctionnement,
+            pour une durée limitée.
+          </p>
+          <p class="lg-p">
+            <strong>Si vous m'écrivez</strong> à l'adresse indiquée plus haut, les informations
+            transmises (nom, adresse électronique, contenu du message) servent uniquement à vous
+            répondre et, le cas échéant, à préparer une proposition. Elles ne sont ni revendues, ni
+            transmises à des tiers, ni utilisées pour de la prospection. Base légale : votre
+            démarche vers moi, puis l'exécution de mesures précontractuelles. Ces échanges sont
+            conservés trois ans à compter du dernier contact, puis supprimés. Les messages
+            aboutissant à une facture suivent les obligations comptables de conservation.
+          </p>
+          <p class="lg-p">
+            La messagerie professionnelle est hébergée par Google (Google Workspace), qui agit comme
+            sous-traitant.
+          </p>
+          <p class="lg-p">
+            Vous disposez d'un droit d'accès, de rectification, d'effacement, de limitation et
+            d'opposition sur vos données. Il s'exerce en écrivant à
+            <a href="mailto:contact@thibaudtl.com">contact@thibaudtl.com</a>. En cas de désaccord,
+            vous pouvez saisir la CNIL, 3 place de Fontenoy, 75007 Paris, ou
+            <a href="https://www.cnil.fr" rel="noopener">cnil.fr</a>.
+          </p>
+        </section>
+
+        <section class="lg-sec">
+          <h2 class="lg-h2"><span class="dc-faint">&gt;</span> Pages sur les réseaux sociaux</h2>
+          <p class="lg-p">
+            J'anime des pages professionnelles sur Facebook, Instagram, TikTok et LinkedIn. Sur ces
+            plateformes, les données de visite sont traitées par les entreprises qui les exploitent,
+            selon leurs propres règles, et je n'ai accès qu'à des statistiques agrégées et anonymes.
+            Pour les pages Facebook et Instagram, l'exploitant de la page et Meta sont considérés
+            comme responsables conjoints de ces statistiques. Les échanges que nous aurions par
+            message privé y sont soumis aux conditions de la plateforme concernée.
+          </p>
+        </section>
+
+        <footer class="cs-foot">
+          <a class="cs-back dc-mono" href="/">cd .. <span aria-hidden="true">↩</span> retour au portfolio</a>
+          <a class="cs-contact dc-mono" href="mailto:contact@thibaudtl.com">on en parle ? <span aria-hidden="true">↗</span></a>
+        </footer>
+      </article>
+    </main>
+
+    <style>
+      /* Fond statique discret (pas de WebGL ici : page de lecture). */
+      .cs-bg {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        background:
+          radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, 0.045), transparent 60%),
+          var(--bg);
+        pointer-events: none;
+      }
+
+      .lg {
+        max-width: 74ch;
+      }
+
+      .lg-sec {
+        margin-top: clamp(38px, 6vh, 62px);
+      }
+
+      .lg-h2 {
+        font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+        font-size: 13px;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        text-transform: lowercase;
+        color: var(--ink);
+        margin: 0 0 18px;
+      }
+
+      .lg-p {
+        font-size: 15px;
+        line-height: 1.75;
+        color: var(--label);
+        margin: 0 0 16px;
+        max-width: 68ch;
+      }
+      .lg-p strong {
+        color: var(--ink);
+        font-weight: 600;
+      }
+      .lg-p a,
+      .lg-dl a {
+        color: var(--ink);
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+      .lg-p a:hover,
+      .lg-dl a:hover {
+        color: #fff;
+      }
+
+      .lg-dl {
+        display: grid;
+        grid-template-columns: minmax(0, 22ch) minmax(0, 1fr);
+        gap: 10px 26px;
+        margin: 0;
+        font-size: 15px;
+        line-height: 1.6;
+      }
+      .lg-dl dt {
+        font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        color: var(--label);
+        padding-top: 3px;
+      }
+      .lg-dl dd {
+        margin: 0;
+        color: var(--ink);
+      }
+
+      @media (max-width: 620px) {
+        .lg-dl {
+          grid-template-columns: 1fr;
+          gap: 2px 0;
+        }
+        .lg-dl dd {
+          margin-bottom: 14px;
+        }
+      }
+
+      .cs-foot {
+        margin: clamp(60px, 10vh, 110px) 0 0;
+        padding-top: 30px;
+        border-top: 1px solid var(--rule);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 18px;
+      }
+      .cs-contact {
+        font-size: 13px;
+        color: var(--ink);
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+      .cs-contact:hover {
+        color: #fff;
+        text-shadow:
+          -2px 0 var(--chroma-r),
+          2px 0 var(--chroma-c);
+      }
+    </style>
+  </body>
+</html>
