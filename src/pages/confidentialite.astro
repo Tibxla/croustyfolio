@@ -16,13 +16,12 @@ import Seo from '../components/Seo.astro';
 //     l'ancien article 6-III ne s'applique plus) ;
 //   - information des personnes (RGPD, articles 12 à 14).
 // Même DA que l'étude de cas : lecture posée, pas de WebGL.
-// ⚠️ ADRESSE : champ à compléter par Thibaud (domicile ou domiciliation), cf. le
-// bloc « editeur » ci-dessous. Tant qu'il vaut ADRESSE_A_COMPLETER, la page ne doit
-// pas être publiée : l'identification serait incomplète.
+// Adresse : domicile professionnel (aucun local séparé). Hébergeur vérifié le
+// 22/08/2026 par les en-têtes de réponse (server: Vercel) et le DNS.
 const TITLE = 'Mentions légales et confidentialité';
 
-const ADRESSE = 'ADRESSE_A_COMPLETER';
-const HEBERGEUR = 'HEBERGEUR_A_COMPLETER';
+const ADRESSE = '51 rue du Bruloir, 95000 Cergy, France';
+const HEBERGEUR = 'Vercel Inc., 340 S Lemon Ave #4133, Walnut, CA 91789, États-Unis';
 
 const PAGE_TITLE = `${TITLE} · Thibaud Thomas-Lamotte`;
 const DESCRIPTION =
@@ -81,8 +80,9 @@ const DESCRIPTION =
         <section class="lg-sec">
           <h2 class="lg-h2"><span class="dc-faint">&gt;</span> Hébergement</h2>
           <p class="lg-p">
-            Ce site est hébergé par {HEBERGEUR}. L'hébergeur assure le stockage et la mise à
-            disposition des pages, sans intervenir sur leur contenu.
+            Ce site est hébergé par {HEBERGEUR}, dont les serveurs de diffusion se trouvent
+            notamment en Europe. L'hébergeur assure le stockage et la mise à disposition des pages,
+            sans intervenir sur leur contenu.
           </p>
         </section>
 
