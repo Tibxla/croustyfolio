@@ -165,19 +165,20 @@ const DESCRIPTION =
         margin-top: clamp(38px, 6vh, 62px);
       }
 
+      /* Aligné sur .cs-h2 de l'étude de cas : dans cette direction, la hiérarchie
+         se fait par la casse, l'interlettrage et la couleur, pas par la taille. */
       .lg-h2 {
-        font-family: var(--font-mono, 'IBM Plex Mono', monospace);
-        font-size: 13px;
-        font-weight: 500;
-        letter-spacing: 0.06em;
-        text-transform: lowercase;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
         color: var(--ink);
-        margin: 0 0 18px;
+        margin: 0 0 20px;
       }
 
       .lg-p {
-        font-size: 15px;
-        line-height: 1.75;
+        font-size: clamp(16px, 1.3vw, 18px);
+        line-height: 1.72;
         color: var(--label);
         margin: 0 0 16px;
         max-width: 68ch;
@@ -200,9 +201,9 @@ const DESCRIPTION =
       .lg-dl {
         display: grid;
         grid-template-columns: minmax(0, 22ch) minmax(0, 1fr);
-        gap: 10px 26px;
+        gap: 11px 26px;
         margin: 0;
-        font-size: 15px;
+        font-size: clamp(16px, 1.3vw, 18px);
         line-height: 1.6;
       }
       .lg-dl dt {
